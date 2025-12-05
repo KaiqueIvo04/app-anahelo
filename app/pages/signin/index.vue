@@ -57,14 +57,15 @@
 
 <script setup lang="ts">
 import { jwtDecode } from "jwt-decode";
+import { useAPI } from "~/composables/useAPI";
 import { useLoggedUserStore } from "~/stores/userLogged.store";
 import type { LoginForm, LoginResponse } from "~/types/auth";
+import { Theme } from "~/types/enums/theme.enum";
 import type { User } from "~/types/user";
 
 definePageMeta({
   layout: "public",
 });
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 // const { theme, toggleTheme } = useTheme();
 const userStore = useLoggedUserStore();
@@ -79,13 +80,10 @@ const router = useRouter();
 async function authenticate() {
   try {
     // Obter token
-    const loginResponse = await useFetch<LoginResponse>(
-      `${apiBaseUrl}/auth/signin`,
-      {
-        method: "post",
-        body: { email: form.email, password: form.password },
-      }
-    );
+    const loginResponse = await useAPI<LoginResponse>(`/auth/signin`, {
+      method: "post",
+      body: { email: form.email, password: form.password },
+    });
 
     // Decodificar token
     const token = loginResponse.data.value!.access_token;
@@ -95,17 +93,22 @@ async function authenticate() {
     }>(token);
 
     // Obter informações do usuário
-    const userResponse = await useFetch<User>(`${apiBaseUrl}/users/${decodedToken.sub}`, {
-      method: "get",
-      headers: {
-        Authorization: `Bearer ${token}`
+    const userResponse = await useFetch<User>(
+      `${import.meta.env.VITE_API_BASE_URL}/users/${decodedToken.sub}`,
+      {
+        method: "get",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
+    );
 
-    // Guardar informações e redirecionar para página
+    // Guardar informações e redirecioanr para página
     if (userResponse && userResponse.data) {
       const user: User = userResponse.data.value!;
-      userStore.setUser(user, token);
+      userStore.setUser(user, token, localStorage.getItem(THEME_KEY) || Theme.LIGHT);
+      router.push('/admin/home')
+
     }
   } catch (error) {
     alert("Falha ao entrar: " + error);

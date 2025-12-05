@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     ],
   },
   css: ['~/main.css'],
+
   app: {
     head: {
       link: [
@@ -17,6 +18,12 @@ export default defineNuxtConfig({
           href: "https://fonts.googleapis.com/icon?family=Material+Icons"
         }
       ]
+    }
+  },
+
+  router: {
+    options: {
+      
     }
   }
 });
