@@ -9,7 +9,9 @@ export default defineNuxtConfig({
     ],
   },
   css: ['~/main.css'],
-
+  routeRules: {
+    '/': { redirect: '/signin' }
+  },
   app: {
     head: {
       link: [
@@ -20,10 +22,4 @@ export default defineNuxtConfig({
       ]
     }
   },
-
-  router: {
-    options: {
-      
-    }
-  }
 });

@@ -16,9 +16,8 @@ export const useLoggedUserStore = defineStore('loggedUser', {
         setUser(user: LoggedUser['user'], token: string, theme: Theme) {
             this.user = user;
             this.token = token
-            this.theme = theme
-
             this.setTheme(this.theme)
+
             // 1. Sets user in `localStorage` and in store variable.
             localStorage.setItem(USER_KEY, JSON.stringify(user));
             // 2. Sets token in `localStorage` and in store variable.
@@ -28,7 +27,9 @@ export const useLoggedUserStore = defineStore('loggedUser', {
         },
 
 
-        getCredential() {
+        async getCredential() {
+            if (this.user && this.token) return
+
             // 1. Gets user of `localStorage`.
             const localStorageUser = localStorage.getItem(USER_KEY);
             // 2. Gets token of `localStorage`.
@@ -36,7 +37,7 @@ export const useLoggedUserStore = defineStore('loggedUser', {
             // 3. Gets theme of `localStorage`.
             const localStorageTheme = localStorage.getItem(THEME_KEY);
 
-            // 3. Sets credentials and headers of axios api.
+            // 3. Sets credentials and headers
             if (localStorageUser && localStorageToken && localStorageTheme) {
                 this.setUser(
                     JSON.parse(localStorageUser),
@@ -72,8 +73,8 @@ export const useLoggedUserStore = defineStore('loggedUser', {
             this.token = undefined;
 
             // 2. Clears theme in `localStorage` and in store variable.
-            localStorage.removeItem(THEME_KEY);
-            this.theme = undefined;
+            // localStorage.removeItem(THEME_KEY);
+            // this.theme = undefined;
         },
     }
 })

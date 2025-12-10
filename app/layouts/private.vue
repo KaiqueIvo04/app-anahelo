@@ -10,57 +10,24 @@
 
       <nav class="space-y-2">
         <NuxtLink
-          to="/admin/home"
-          class="flex w-full gap-2 p-2 rounded hover:bg-white"
+          v-for="item in menuItems"
+          :key="item.to"
+          :to="item.to"
+          class="flex w-full gap-2 p-2 rounded hover:bg-secondary transition ease duration-500"
         >
-          <span
-            class="material-icons cursor-pointer select-none opacity-70 hover:opacity-100"
-          >
-            home
+          <span class="material-icons cursor-pointer select-none opacity-70">
+            {{ item.icon }}
           </span>
-          Início
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users"
-          class="flex w-full gap-2 p-2 rounded hover:bg-white"
-        >
-          <span
-            class="material-icons cursor-pointer select-none opacity-70 hover:opacity-100"
-          >
-            group
-          </span>
-          Usuários
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/products"
-          class="flex w-full gap-2 p-2 rounded hover:bg-white"
-        >
-          <span
-            class="material-icons cursor-pointer select-none opacity-70 hover:opacity-100"
-          >
-            inventory
-          </span>
-          Produtos
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/account"
-          class="flex w-full gap-2 p-2 rounded hover:bg-white"
-        >
-          <span
-            class="material-icons cursor-pointer select-none opacity-70 hover:opacity-100"
-          >
-            person
-          </span>
-          Minha conta
+          {{ item.label }}
         </NuxtLink>
       </nav>
 
+      <!-- Botão de tema -->
       <div class="mt-auto">
         <button
           @click="loggedUserStore.toggleTheme"
           class="relative w-full p-2 bg-secondary text-white rounded hover:bg-gray-900 cursor-pointer text-center"
         >
-          <!-- Ícone fixo à esquerda -->
           <span
             class="material-icons absolute left-3 top-1/2 -translate-y-1/2 opacity-70 text-xl"
           >
@@ -69,11 +36,11 @@
             }}
           </span>
 
-          <!-- Texto centralizado -->
           <span> Tema escuro </span>
         </button>
       </div>
 
+      <!-- Sair -->
       <div class="mt-2">
         <button
           @click="logout"
@@ -89,27 +56,30 @@
       </div>
     </aside>
 
-    <!-- Content -->
-    <main class="flex-1 p-6">
+    <!-- Conteúdo -->
+    <main class="flex justify-center items-center w-full">
       <slot />
     </main>
   </div>
 </template>
-
 <script setup lang="ts">
 import { useLoggedUserStore } from "~/stores/userLogged.store";
 import { Theme } from "~/types/enums/theme.enum";
 import type { User } from "~/types/user";
 
-// Caso deseje proteger a rota, pode usar um middleware:
-// definePageMeta({ middleware: 'auth' })
 const router = useRouter();
 const loggedUserStore = useLoggedUserStore();
 
-const user = ref<User | undefined>(undefined);
-
+const user = ref<User | undefined>(loggedUserStore.user);
 const loggingOut = ref(false);
-user.value = loggedUserStore.user;
+
+// Lista de itens do menu
+const menuItems = [
+  { icon: "home", label: "Início", to: "/admin/home" },
+  { icon: "group", label: "Usuários", to: "/admin/users" },
+  { icon: "inventory", label: "Produtos", to: "/admin/products" },
+  { icon: "person", label: "Minha conta", to: "/admin/myaccount" },
+];
 
 async function logout() {
   if (loggedUserStore.token) {
@@ -117,7 +87,6 @@ async function logout() {
 
     try {
       loggedUserStore.clearCredential();
-
       await router.push("/signin");
     } catch (error) {
       alert(error);

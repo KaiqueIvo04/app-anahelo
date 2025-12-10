@@ -65,6 +65,7 @@ import type { User } from "~/types/user";
 
 definePageMeta({
   layout: "public",
+  middleware: "guest",
 });
 
 // const { theme, toggleTheme } = useTheme();
