@@ -16,7 +16,7 @@
         <label class="input input-bordered flex items-center gap-2 w-full mb-3">
           <span class="material-icons opacity-70">mail</span>
           <input
-            v-model="email"
+            v-model="form.email"
             type="text"
             class="grow"
             placeholder="Digite seu e-mail"
@@ -28,7 +28,7 @@
           <span class="material-icons opacity-70">password</span>
           <!-- Campo de senha -->
           <input
-            v-model="password"
+            v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
             class="grow"
             placeholder="Digite sua senha"
@@ -56,22 +56,67 @@
 </template>
 
 <script setup lang="ts">
+import { jwtDecode } from "jwt-decode";
+import { useAPI } from "~/composables/useAPI";
+import { useLoggedUserStore } from "~/stores/userLogged.store";
+import type { LoginForm, LoginResponse } from "~/types/interfaces/auth";
+import { Theme } from "~/types/enums/theme.enum";
+import type { User } from "~/types/interfaces/user";
+
 definePageMeta({
   layout: "public",
+  middleware: "guest",
 });
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 // const { theme, toggleTheme } = useTheme();
-const email = ref("");
-const password = ref("");
+const userStore = useLoggedUserStore();
+const form = reactive<LoginForm>({
+  email: "",
+  password: "",
+});
+
 const showPassword = ref(false);
 const router = useRouter();
 
 async function authenticate() {
-  const response = await useFetch(`${apiBaseUrl}/auth/signin`, {
-    method: "post",
-    body: { email: email.value, password: password.value },
-  });
-  console.log(response);
+  try {
+    // Obter token
+    const loginResponse = await useAPI<LoginResponse>(`/auth/signin`, {
+      method: "post",
+      body: { email: form.email, password: form.password },
+    });
+
+    // Decodificar token
+    const token = loginResponse.data.value!.access_token;
+    const decodedToken = jwtDecode<{
+      username: string;
+      sub: string;
+    }>(token);
+
+    // Obter informações do usuário
+    const userResponse = await useFetch<User>(
+      `${import.meta.env.VITE_API_BASE_URL}/users/${decodedToken.sub}`,
+      {
+        method: "get",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    // Guardar informações e redirecioanr para página
+    if (userResponse && userResponse.data) {
+      const user: User = userResponse.data.value!;
+      userStore.setUser(
+        user,
+        token,
+        localStorage.getItem(THEME_KEY) || Theme.LIGHT
+      );
+      router.push("/admin/home");
+    }
+  } catch (error) {
+    console.error("Erro inesperado:", error);
+    form.password = "";
+  }
 }
 </script>
