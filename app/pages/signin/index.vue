@@ -59,9 +59,9 @@
 import { jwtDecode } from "jwt-decode";
 import { useAPI } from "~/composables/useAPI";
 import { useLoggedUserStore } from "~/stores/userLogged.store";
-import type { LoginForm, LoginResponse } from "~/types/auth";
+import type { LoginForm, LoginResponse } from "~/types/interfaces/auth";
 import { Theme } from "~/types/enums/theme.enum";
-import type { User } from "~/types/user";
+import type { User } from "~/types/interfaces/user";
 
 definePageMeta({
   layout: "public",
@@ -107,12 +107,15 @@ async function authenticate() {
     // Guardar informações e redirecioanr para página
     if (userResponse && userResponse.data) {
       const user: User = userResponse.data.value!;
-      userStore.setUser(user, token, localStorage.getItem(THEME_KEY) || Theme.LIGHT);
-      router.push('/admin/home')
-
+      userStore.setUser(
+        user,
+        token,
+        localStorage.getItem(THEME_KEY) || Theme.LIGHT
+      );
+      router.push("/admin/home");
     }
   } catch (error) {
-    alert("Falha ao entrar: " + error);
+    console.error("Erro inesperado:", error);
     form.password = "";
   }
 }

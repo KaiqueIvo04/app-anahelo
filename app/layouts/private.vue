@@ -57,15 +57,17 @@
     </aside>
 
     <!-- Conteúdo -->
-    <main class="flex justify-center items-center w-full">
+    <main class="w-full">
       <slot />
     </main>
+
   </div>
 </template>
+
 <script setup lang="ts">
 import { useLoggedUserStore } from "~/stores/userLogged.store";
 import { Theme } from "~/types/enums/theme.enum";
-import type { User } from "~/types/user";
+import type { User } from "~/types/interfaces/user";
 
 const router = useRouter();
 const loggedUserStore = useLoggedUserStore();

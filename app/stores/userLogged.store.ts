@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { Theme } from "~/types/enums/theme.enum";
-import type { LoggedUser } from "~/types/logged.user";
+import type { LoggedUser } from "~/types/interfaces/logged.user";
 import { THEME_KEY, TOKEN_KEY, USER_KEY } from "~/utils/localStorage.utils";
 
 export const useLoggedUserStore = defineStore('loggedUser', {
