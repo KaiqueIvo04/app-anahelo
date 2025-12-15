@@ -1,15 +1,32 @@
 <template>
   <div class="w-full flex justify-center">
     <div class="m-15 w-full max-w-4xl flex flex-col items-center">
-      <div class="w-full">
-        <h1 class="text-2xl font-semibold text-center">Usuários</h1>
-        <div class="divider my-2"></div>
+      <div class="w-full flex items-center gap-3 p-2">
+        <div class="h-8 border-l-4 border-primary"></div>
+
+        <span class="material-icons text-3xl"> group </span>
+
+        <h1 class="text-2xl font-semibold">Usuários</h1>
       </div>
 
       <div
-        class="w-full mt-6 overflow-x-auto rounded-box border border-base-300 bg-base-100"
+        class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100"
       >
-        <TableComponent :rows="users" :columns="columns" :loading="loading" />
+        <CrudTable
+          :rows="users"
+          :columns="columns"
+          :loading="loading"
+          :can-create="true"
+          @create="openModalCreate"
+        />
+
+        <CrudModal v-model="modalValue" :title="modalTitle">
+          <FeatureUserForm
+            :user="selectedUser"
+            @save="createUser"
+            @cancel="closeModal"
+          />
+        </CrudModal>
       </div>
     </div>
   </div>
@@ -17,9 +34,6 @@
 
 <script setup lang="ts">
 import type { User } from "~/types/interfaces/user";
-const loading = ref(true);
-
-const users = ref<User[]>([]);
 
 const columns = [
   { key: "id", label: "ID" },
@@ -30,6 +44,16 @@ const columns = [
 
 definePageMeta({
   layout: "private",
+});
+
+const loading = ref(true);
+const users = ref<User[]>([]);
+const modalValue = ref(false);
+const selectedUser = ref<User | undefined>(undefined);
+
+// Criando ou editando
+const modalTitle = computed(() => {
+  return selectedUser.value ? "Editar Usuário" : "Novo Usuário";
 });
 
 async function getUsers() {
@@ -53,7 +77,6 @@ async function getUsers() {
         type: u.type,
       }));
     }
-
   } catch (error) {
     console.error("Erro inesperado:", error);
   } finally {
@@ -61,6 +84,25 @@ async function getUsers() {
   }
 }
 
-onMounted(getUsers)
+async function createUser() {
+  alert("Salvando usuário!");
+}
+
+async function editUser() {
+  alert("Editando usuário!");
+}
+
+// Abre modal para criar
+function openModalCreate() {
+  selectedUser.value = undefined;
+  modalValue.value = true;
+}
+
+function closeModal() {
+  modalValue.value = false;
+  selectedUser.value = undefined;
+}
+
+onMounted(getUsers);
 setTimeout(() => (loading.value = false), 800);
 </script>

@@ -1,15 +1,15 @@
 <template>
-  <table class="table w-full">
+  <table class="table table-zebra w-full">
     <!-- Cabeçalho -->
     <thead>
       <tr>
         <th
           v-for="col in columns"
           :key="col.key"
-          class="cursor-pointer select-none"
+          class="cursor-pointer"
           @click="sortColumn(col)"
         >
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 p-2">
             {{ col.label }}
 
             <!-- Indicador de ordenação -->
@@ -28,7 +28,7 @@
     <!-- Corpo -->
     <tbody>
       <tr class="hover:bg-secondary/25" v-for="row in sortedRows" :key="rowKey(row)">
-        <td v-for="col in columns" :key="col.key">
+        <td class="p-2" v-for="col in columns" :key="col.key">
           {{ row[col.key] }}
         </td>
 
