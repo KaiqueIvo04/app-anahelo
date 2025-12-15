@@ -1,12 +1,25 @@
+// plugins/02.boot.client.ts
 import { useLoggedUserStore } from "~/stores/userLogged.store";
-import { THEME_KEY } from "~/utils/localStorage.utils";
 
 export default defineNuxtPlugin(async () => {
   const loggedUserStore = useLoggedUserStore();
+  const { initTheme, applyTheme } = useTheme();
+  
+  // Aplica o tema IMEDIATAMENTE
+  initTheme();
+  
+  // Busca as credenciais
   await loggedUserStore.getCredential();
   
-  // Define o tema inicial ao carregar a página
-  const savedTheme = loggedUserStore.theme || import.meta.env.VITE_DEFAULT_THEME
-  if (!loggedUserStore.theme) localStorage.setItem(THEME_KEY, savedTheme)
-  document.documentElement.setAttribute('data-theme', savedTheme)
-})
+  // Atualiza o tema se vier da store
+  if (loggedUserStore.theme) {
+    applyTheme(loggedUserStore.theme);
+  }
+  
+  // Watch para mudanças
+  watch(() => loggedUserStore.theme, (newTheme) => {
+    if (newTheme) {
+      applyTheme(newTheme);
+    }
+  });
+});

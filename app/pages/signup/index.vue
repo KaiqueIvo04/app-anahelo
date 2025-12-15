@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card card-border w-96 mx-10 p-5 h-fit flex justify-center items-center bg-base-content"
+    class="card card-border w-96 mx-10 p-5 h-fit flex justify-center items-center bg-base-100"
   >
     <div>
       <img class="w-40 rounded-full" src="~/assets/logos/anahelo_logo.png" />

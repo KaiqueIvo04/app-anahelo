@@ -1,34 +1,50 @@
-// import { useLoggedUserStore } from "~/stores/userLogged.store"
-// import { Theme } from "~/types/enums/theme.enum"
+// composables/useTheme.ts
+import { Theme } from "~/types/enums/theme.enum";
+import { THEME_KEY } from "~/utils/localStorage.utils";
 
-// const loggedUserStore = useLoggedUserStore()
+export const useTheme = () => {
+  const applyTheme = (theme: Theme) => {
+    if (import.meta.client) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+    }
+  };
 
-// export const useTheme = () => {
-//   const theme = useState<string>('theme', () => {
-//     if (import.meta.client) {
-//       return loggedUserStore.getTheme() || Theme.LIGHT
-//     }
-//     return defaultTheme
-//   })
+  const getTheme = (): string => {
+    if (import.meta.client) {
+      return localStorage.getItem(THEME_KEY) || import.meta.env.VITE_DEFAULT_THEME || Theme.LIGHT;
+    }
+    return import.meta.env.VITE_DEFAULT_THEME || Theme.LIGHT;
+  };
 
-//   function setTheme(newTheme: string) {
-//     theme.value = newTheme
+  const initTheme = () => {
+    const theme = getTheme();
+    applyTheme(theme);
     
-//     if (import.meta.client) {
-//       document.documentElement.setAttribute('data-theme', newTheme)
-      
-//       localStorage.setItem('theme', newTheme)
-//     }
-//   }
+    // MutationObserver para reforçar o tema se o atributo for removido
+    if (import.meta.client) {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const savedTheme = getTheme();
+            if (!currentTheme || currentTheme !== savedTheme) {
+              document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+          }
+        });
+      });
 
-//   function toggleTheme() {
-//     const newTheme = theme.value === defaultTheme ? darkTheme : defaultTheme
-//     setTheme(newTheme)
-//   }
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+      });
+    }
+  };
 
-//   return {
-//     theme: readonly(theme),
-//     setTheme,
-//     toggleTheme
-//   }
-// }
+  return {
+    applyTheme,
+    getTheme,
+    initTheme
+  };
+};
