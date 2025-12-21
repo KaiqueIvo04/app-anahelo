@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { Theme } from "~/types/enums/theme.enum";
 import type { LoggedUser } from "~/types/interfaces/logged.user";
-import { THEME_KEY, TOKEN_KEY, USER_KEY } from "~/utils/localStorage.utils";
 
 export const useLoggedUserStore = defineStore('loggedUser', {
     state: (): LoggedUser => {
@@ -15,66 +14,94 @@ export const useLoggedUserStore = defineStore('loggedUser', {
     actions: {
         setUser(user: LoggedUser['user'], token: string, theme: Theme) {
             this.user = user;
-            this.token = token
-            this.setTheme(this.theme)
+            this.token = token;
+            this.theme = theme;
 
-            // 1. Sets user in `localStorage` and in store variable.
-            localStorage.setItem(USER_KEY, JSON.stringify(user));
-            // 2. Sets token in `localStorage` and in store variable.
-            localStorage.setItem(TOKEN_KEY, token);
-            // 23. Sets theme in `localStorage` and in store variable.
-            localStorage.setItem(THEME_KEY, theme);
+            // ✅ Usa cookies ao invés de localStorage
+            const userCookie = useCookie('user', {
+                maxAge: 60 * 60 * 24 * 7, // 7 dias
+                sameSite: 'lax',
+            });
+            const tokenCookie = useCookie('auth_token', {
+                maxAge: 60 * 60 * 24 * 7,
+                sameSite: 'lax',
+                secure: import.meta.env.VITE_NODE_ENV === 'production',
+            });
+            const themeCookie = useCookie('theme', {
+                maxAge: 60 * 60 * 24 * 365, // 1 ano
+                sameSite: 'lax',
+            });
+
+            userCookie.value = JSON.stringify(user);
+            tokenCookie.value = token;
+            themeCookie.value = theme;
+
+            // Aplica o tema no DOM (apenas no cliente)
+            if (import.meta.client) {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
         },
 
-
         async getCredential() {
-            if (this.user && this.token) return
+            if (this.user && this.token) return;
 
-            // 1. Gets user of `localStorage`.
-            const localStorageUser = localStorage.getItem(USER_KEY);
-            // 2. Gets token of `localStorage`.
-            const localStorageToken = localStorage.getItem(TOKEN_KEY);
-            // 3. Gets theme of `localStorage`.
-            const localStorageTheme = localStorage.getItem(THEME_KEY);
+            // ✅ Lê dos cookies
+            const userCookie = useCookie('user');
+            const tokenCookie = useCookie('auth_token');
+            const themeCookie = useCookie('theme');
 
-            // 3. Sets credentials and headers
-            if (localStorageUser && localStorageToken && localStorageTheme) {
-                this.setUser(
-                    JSON.parse(localStorageUser),
-                    localStorageToken,
-                    localStorageTheme
-                );
+            if (userCookie.value && tokenCookie.value && themeCookie.value) {
+                this.user = typeof userCookie.value === 'string' 
+                    ? JSON.parse(userCookie.value) 
+                    : userCookie.value;
+                this.token = tokenCookie.value;
+                this.theme = themeCookie.value as Theme;
+
+                // Aplica o tema no DOM (apenas no cliente)
+                if (import.meta.client && this.theme) {
+                    document.documentElement.setAttribute('data-theme', this.theme);
+                }
             }
         },
 
         setTheme(theme: Theme) {
-            localStorage.setItem(THEME_KEY, theme);
-            this.theme = theme
-            document.documentElement.setAttribute('data-theme', theme)
+            this.theme = theme;
+            
+            const themeCookie = useCookie('theme', {
+                maxAge: 60 * 60 * 24 * 365,
+                sameSite: 'lax',
+            });
+            themeCookie.value = theme;
+
+            // Aplica o tema no DOM (apenas no cliente)
+            if (import.meta.client) {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
         },
 
         toggleTheme() {
-            const newTheme = (this.theme || localStorage.getItem(THEME_KEY)) === Theme.LIGHT ? Theme.DARK : Theme.LIGHT
-            this.setTheme(newTheme)
+            const themeCookie = useCookie('theme');
+            const currentTheme = this.theme || themeCookie.value;
+            const newTheme = currentTheme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT;
+            this.setTheme(newTheme);
         },
 
         clearTheme() {
-            localStorage.removeItem(THEME_KEY);
+            const themeCookie = useCookie('theme');
+            themeCookie.value = null;
             this.theme = undefined;
         },
 
         clearCredential() {
-            // 1. Clears user in `localStorage` and in store variable.
-            localStorage.removeItem(USER_KEY);
+            // ✅ Limpa os cookies
+            const userCookie = useCookie('user');
+            const tokenCookie = useCookie('auth_token');
+
+            userCookie.value = null;
+            tokenCookie.value = null;
+
             this.user = undefined;
-
-            // 2. Clears token in `localStorage` and in store variable.
-            localStorage.removeItem(TOKEN_KEY);
             this.token = undefined;
-
-            // 2. Clears theme in `localStorage` and in store variable.
-            // localStorage.removeItem(THEME_KEY);
-            // this.theme = undefined;
         },
     }
 })

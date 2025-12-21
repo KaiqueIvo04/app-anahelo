@@ -1,28 +1,35 @@
 // composables/useTheme.ts
 import { Theme } from "~/types/enums/theme.enum";
-import { THEME_KEY } from "~/utils/localStorage.utils";
 
 export const useTheme = () => {
+  const config = useRuntimeConfig();
+  const themeCookie = useCookie<Theme>('theme', {
+    maxAge: 60 * 60 * 24 * 365, // 1 ano
+    sameSite: 'lax',
+    default: () => (config.public.defaultTheme as Theme) || Theme.LIGHT,
+  });
+
   const applyTheme = (theme: Theme) => {
+    themeCookie.value = theme;
+    
+    // Aplica no DOM apenas no cliente
     if (import.meta.client) {
       document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem(THEME_KEY, theme);
     }
   };
 
-  const getTheme = (): string => {
-    if (import.meta.client) {
-      return localStorage.getItem(THEME_KEY) || import.meta.env.VITE_DEFAULT_THEME || Theme.LIGHT;
-    }
-    return import.meta.env.VITE_DEFAULT_THEME || Theme.LIGHT;
+  const getTheme = (): Theme => {
+    return themeCookie.value || (config.public.defaultTheme as Theme) || Theme.LIGHT;
   };
 
   const initTheme = () => {
     const theme = getTheme();
-    applyTheme(theme);
     
-    // MutationObserver para reforçar o tema se o atributo for removido
+    // Aplica o tema imediatamente
     if (import.meta.client) {
+      document.documentElement.setAttribute('data-theme', theme);
+      
+      // MutationObserver para reforçar o tema se o atributo for removido
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
@@ -42,9 +49,17 @@ export const useTheme = () => {
     }
   };
 
+  const toggleTheme = () => {
+    const currentTheme = getTheme();
+    const newTheme = currentTheme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT;
+    applyTheme(newTheme);
+  };
+
   return {
+    theme: themeCookie,
     applyTheme,
     getTheme,
-    initTheme
+    initTheme,
+    toggleTheme,
   };
 };
