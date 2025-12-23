@@ -17,22 +17,32 @@ export function useAPI<T>(
   return useFetch(url, {
     baseURL: config.public.apiBase,
     ...options,
-    onRequest({ options }) {
-      if (tokenCookie) {
+    credentials: 'include',
+    timeout: 10000,
+
+    onRequest({ options, error, response }) {
+      if (tokenCookie) {  
         options.headers.set("Authorization", `Bearer ${tokenCookie.value}`)
       }
     },
-    // ✅ Tratamento de erro
-    onResponseError({ response }) {
-      if (response.status === 401) {
-        // Limpa cookies
-        tokenCookie.value = null
-        userCookie.value = null
 
+    onResponseError({ response, error }) {
+      if (response.status === 401 || response.status === 403) {
+        // Limpa cookies
+        tokenCookie.value = null;
+        userCookie.value = null;
+        
         // Redireciona
-        if (import.meta.client) {
+        if (import.meta.client && (window.location.pathname !== '/signin')) {
           navigateTo('/signin')
         }
+      }
+
+      if (response.status >= 500) {
+        useFeedback().show(
+          "Erro interno no servidor. Tente novamente mais tarde.",
+          "error"
+        );
       }
     },
   })

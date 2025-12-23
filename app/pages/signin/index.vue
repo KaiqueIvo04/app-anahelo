@@ -7,13 +7,12 @@
     </div>
 
     <div class="w-full px-5 mt-5">
-      <p class="mb-3 text-xl text-white text-center">Login</p>
-      
-      <!-- Mensagem de erro -->
-      <div v-if="errorMessage" class="alert alert-error mb-3">
-        <span class="material-icons">error</span>
-        <span>{{ errorMessage }}</span>
-      </div>
+      <p class="mb-3 text-xl text-primary text-center">Login</p>
+
+      <UiFeedBackAlert
+        :message="feedback.message.value"
+        :type="feedback.type.value"
+      />
 
       <form
         @submit.prevent="authenticate"
@@ -53,8 +52,8 @@
           </span>
         </label>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           class="btn btn-primary w-full mb-2"
           :disabled="loading"
         >
@@ -62,7 +61,7 @@
           {{ loading ? "Entrando..." : "Entrar" }}
         </button>
       </form>
-      
+
       <button
         @click="router.push('/signup')"
         class="btn btn-secondary w-full"
@@ -89,6 +88,7 @@ definePageMeta({
 const userStore = useLoggedUserStore();
 const router = useRouter();
 const config = useRuntimeConfig();
+const feedback = useFeedback();
 
 const form = reactive<LoginForm>({
   email: "",
@@ -103,23 +103,41 @@ async function authenticate() {
   loading.value = true;
   errorMessage.value = "";
 
-  try {
-    const baseURL = config.public.apiBase;
-    const loginResponse = await $fetch<LoginResponse>(`${baseURL}/auth/signin`, {
+  const baseURL = config.public.apiBase;
+  const { data: loginResponse, error: loginError } =
+    await useFetch<LoginResponse>(`${baseURL}/auth/signin`, {
       method: "POST",
-      body: { 
-        email: form.email, 
-        password: form.password 
+      body: {
+        email: form.email,
+        password: form.password,
       },
     });
 
-    if (!loginResponse?.access_token) {
-      errorMessage.value = "Email ou senha inválidos";
-      form.password = "";
-      return;
+  if (loginError.value) {
+    const status = loginError.value.statusCode;
+    switch (status) {
+      case 401:
+        feedback.show("Email ou senha inválidos!", "error");
+        loading.value = false;
+        break;
+      case 400:
+        feedback.show("Um ou mais campos estão inválidos!", "error");
+        break;
+      case 500:
+        feedback.show("Erro interno no servidor!", "error");
+        break;
+      default:
+        feedback.show(
+          "Ocorreu um erro inesperado, verifique sua conexão com a internet!",
+          "error"
+        );
+        break;
     }
+    loading.value = false;
+    form.password = "";
 
-    const token = loginResponse.access_token;
+  } else if (loginResponse.value) {
+    const token = loginResponse.value.access_token;
 
     const decodedToken = jwtDecode<{
       username: string;
@@ -127,34 +145,28 @@ async function authenticate() {
     }>(token);
 
     // Buscar dados do usuário manualmente com fetch, pois o token ainda não foi colocado no store
-    const { data: userData, error: userError } = await useFetch<User>(`${config.public.apiBase}/users/${decodedToken.sub}`, {
-      method: "GET",
-      headers: { "Authorization": "Bearer " + token}
-    });
+    const { data: userData, error: userError } = await useFetch<User>(
+      `${config.public.apiBase}/users/${decodedToken.sub}`,
+      {
+        method: "GET",
+        headers: { Authorization: "Bearer " + token },
+      }
+    );
 
     if (userError.value || !userData.value) {
-      console.error('Erro ao buscar usuário:', userError.value);
-      errorMessage.value = "Erro ao carregar dados do usuário";
+      feedback.show("Erro ao carregar dados do usuário!", "error");
       return;
     }
 
     // Salvar na store
-    const themeCookie = useCookie<Theme>('theme');
+    const themeCookie = useCookie<Theme>("theme");
     const currentTheme = themeCookie.value || Theme.LIGHT;
-    
-    userStore.setUser(
-      userData.value,
-      token,
-      currentTheme
-    );
+    userStore.setUser(userData.value, token, currentTheme);
 
     // Redirecionar usuário
     await router.push("/admin/home");
 
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.message || "Erro ao fazer login";
     form.password = "";
-  } finally {
     loading.value = false;
   }
 }

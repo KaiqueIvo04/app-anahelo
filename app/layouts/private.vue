@@ -36,7 +36,7 @@
             }}
           </span>
 
-          <span> Tema escuro </span>
+          <span> {{loggedUserStore.theme == Theme.LIGHT ? "Modo escuro" : "Modo claro"}} </span>
         </button>
       </div>
 

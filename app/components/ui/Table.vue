@@ -9,7 +9,7 @@
           class="cursor-pointer"
           @click="sortColumn(col)"
         >
-          <div class="flex items-center gap-1 p-2">
+          <div class="flex items-center gap-1">
             {{ col.label }}
 
             <!-- Indicador de ordenação -->
@@ -21,30 +21,70 @@
         </th>
 
         <!-- Ações -->
-        <th v-if="$slots.actions">Ações</th>
+        <th v-if="$slots.actions || showDefaultActions">Ações</th>
       </tr>
     </thead>
 
     <!-- Corpo -->
     <tbody>
-      <tr class="hover:bg-secondary/25" v-for="row in sortedRows" :key="rowKey(row)">
-        <td class="p-2" v-for="col in columns" :key="col.key">
-          {{ row[col.key] }}
+      <tr 
+        v-for="row in sortedRows" 
+        :key="rowKey(row)"
+        :class="[
+          'hover:bg-secondary/25',
+          isRowDisabled(row) ? 'opacity-60' : ''
+        ]"
+      >
+        <td v-for="col in columns" :key="col.key">
+          <div class="flex items-center gap-2">
+            {{ row[col.key] }}
+            <span 
+              v-if="isRowDisabled(row) && col.key === columns[0]!.key" 
+              class="badge badge-sm badge-info"
+            >
+              Você
+            </span>
+          </div>
         </td>
 
-        <td v-if="$slots.actions">
-          <slot name="actions" :row="row" />
+        <td v-if="$slots.actions || showDefaultActions">
+          <slot name="actions" :row="row" :disabled="isRowDisabled(row)">
+            <!-- Ações padrão se não houver slot customizado -->
+            <div class="flex gap-2" v-if="showDefaultActions">
+              <button
+                v-if="!hideEdit"
+                @click="$emit('edit', row)"
+                :disabled="isRowDisabled(row)"
+                class="btn btn-sm btn-ghost"
+                :class="{ 'cursor-not-allowed': isRowDisabled(row) }"
+                :title="isRowDisabled(row) ? 'Você não pode editar sua própria conta' : 'Editar'"
+              > 
+                <span class="material-icons text-blue-600">edit</span>
+              </button>
+
+              <button
+                v-if="!hideDelete"
+                @click="$emit('delete', row)"
+                :disabled="isRowDisabled(row)"
+                class="btn btn-sm btn-ghost"
+                :class="{ 'btn-disabled cursor-not-allowed': isRowDisabled(row) }"
+                :title="isRowDisabled(row) ? 'Você não pode excluir sua própria conta' : 'Excluir'"
+              >
+                <span class="material-icons text-red-600">delete</span>
+              </button>
+            </div>
+          </slot>
         </td>
       </tr>
 
       <tr v-if="loading">
-        <td :colspan="columns.length + ($slots.actions ? 1 : 0)">
+        <td :colspan="columns.length + ($slots.actions || showDefaultActions ? 1 : 0)">
           <div class="text-center p-6">Carregando...</div>
         </td>
       </tr>
 
       <tr v-if="!loading && sortedRows.length === 0">
-        <td :colspan="columns.length + ($slots.actions ? 1 : 0)">
+        <td :colspan="columns.length + ($slots.actions || showDefaultActions ? 1 : 0)">
           <div class="text-center p-6 opacity-70">
             Nenhum registro encontrado
           </div>
@@ -62,6 +102,23 @@ const props = defineProps<{
   columns: Column[];
   loading?: boolean;
   rowKey?: (row: any) => string | number;
+  
+  // Configuração de ações padrão
+  showDefaultActions?: boolean;
+  hideEdit?: boolean;
+  hideDelete?: boolean;
+  
+  // Labels customizáveis
+  editLabel?: string;
+  deleteLabel?: string;
+  
+  // Função para desabilitar linhas específicas
+  disableRow?: (row: any) => boolean;
+}>();
+
+defineEmits<{
+  edit: [row: any];
+  delete: [row: any];
 }>();
 
 const rowKey = props.rowKey ?? ((row) => row.id ?? JSON.stringify(row));
@@ -78,6 +135,10 @@ function sortColumn(col: Column) {
     sort.key = col.key;
     sort.direction = "asc";
   }
+}
+
+function isRowDisabled(row: any): boolean {
+  return props.disableRow ? props.disableRow(row) : false;
 }
 
 const sortedRows = computed(() => {

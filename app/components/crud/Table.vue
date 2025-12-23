@@ -5,18 +5,34 @@
         v-if="!hideCreate && canCreate"
         @click="emitirCriar"
         class="btn btn-primary"
+        :title="'Registrar'"
       >
         <span class="material-icons"> add </span>
         {{ createLabel }}
       </button>
     </div>
 
-    <UiTable
-      :rows="rows"
-      :columns="columns"
-      :loading="loading"
-      :row-key="rowKey"
-    />
+    <div class="max-h-100">
+      <UiTable
+        :rows="rows"
+        :columns="columns"
+        :loading="loading"
+        :row-key="rowKey"
+        :disable-row="disableRow"
+        :show-default-actions="showDefaultActions"
+        :hide-edit="hideEdit || !canEdit"
+        :hide-delete="hideDelete || !canDelete"
+        :edit-label="editLabel"
+        :delete-label="deleteLabel"
+        @edit="emitirEditar"
+        @delete="emitirExcluir"
+      >
+        <!-- Passa o slot de ações customizadas se existir -->
+        <template #actions="{ row }">
+          <slot name="actions" :row="row" />
+        </template>
+      </UiTable>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
@@ -27,26 +43,50 @@ interface Props {
   columns: Column[];
   loading?: boolean;
   rowKey?: (row: any) => string | number;
+  disableRow?: (row: any) => boolean;
 
   // Configurações de ações
   hideCreate?: boolean;
+  hideEdit?: boolean;
+  hideDelete?: boolean;
+  showDefaultActions?: boolean;
 
   // Permissões dinâmicas
   canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
 
   // Labels customizáveis
   createLabel?: string;
+  editLabel?: string;
+  deleteLabel?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  createLabel: "NOVO USUÁRIO",
+  createLabel: "Registrar",
+  editLabel: "Editar",
+  deleteLabel: "Excluir",
+  showDefaultActions: true,
+  canCreate: true,
+  canEdit: true,
+  canDelete: true,
 });
 
 const emit = defineEmits<{
   create: []; // evento de criar
+  edit: [row: any];
+  delete: [row: any];
 }>();
 
 function emitirCriar() {
-  emit('create');
+  emit("create");
+}
+
+function emitirEditar(row: any) {
+  emit("edit", row);
+}
+
+function emitirExcluir(row: any) {
+  emit("delete", row);
 }
 </script>

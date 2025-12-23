@@ -2,7 +2,7 @@
   <form @submit.prevent="saveUser" class="space-y-4">
     <div class="form-control">
       <label class="label">
-        <span class="label-text">Nome *</span>
+        <span class="label-text">Nome*</span>
       </label>
       <input
         v-model="form.name"
@@ -15,7 +15,7 @@
 
     <div class="form-control">
       <label class="label">
-        <span class="label-text">E-mail *</span>
+        <span class="label-text">E-mail*</span>
       </label>
       <input
         v-model="form.email"
@@ -28,7 +28,7 @@
 
     <div class="form-control">
       <label class="label">
-        <span class="label-text">Tipo *</span>
+        <span class="label-text">Tipo*</span>
       </label>
       <select
         v-model="form.type"
@@ -43,7 +43,7 @@
     <!-- só aparece ao criar -->
     <div v-if="!user" class="form-control">
       <label class="label">
-        <span class="label-text">Senha *</span>
+        <span class="label-text">Senha*</span>
       </label>
       <input
         v-model="form.password"
