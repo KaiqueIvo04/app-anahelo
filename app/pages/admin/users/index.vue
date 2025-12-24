@@ -7,9 +7,10 @@
         <h1 class="text-2xl font-semibold">Usuários</h1>
       </div>
 
-      <div v-if="error" class="alert alert-error">
-        Erro ao carregar usuários: {{ error.message }}
-      </div>
+      <UiFeedBackAlert
+        :message="feedback.message.value"
+        :type="feedback.type.value",
+      />
 
       <div
         class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100"
@@ -18,7 +19,7 @@
           :rows="users || []"
           :columns="columns"
           :loading="pending"
-          :disable-row="isUsuarioLogado"
+          :disable-row="isLoggedUser"
           :create-label="'NOVO USUÁRIO'"
           @create="openModalCreate"
           @edit="openModalEdit"
@@ -51,16 +52,17 @@ definePageMeta({
   layout: "private",
 });
 
-const {
-  data: users,
-  pending,
-  refresh,
-  error,
-} = await useAPI<User[]>("/users", {
-  lazy: true,
-});
+const feedback = useFeedback();
+const { data: users, pending, refresh, error } = await useAPI<User[]>("/users");
 
-const loggedUser = useLoggedUserStore().user;
+if (error.value) {
+  feedback.show(`Erro ao carregar usuários: ${error.value.message}`, "error");
+}
+
+const loggedUserStore = useLoggedUserStore();
+loggedUserStore.getCredential();
+
+const loggedUser = computed(() => loggedUserStore.user);
 const modalValue = ref(false);
 const selectedUser = ref<User | undefined>(undefined);
 
@@ -69,8 +71,8 @@ const modalTitle = computed(() => {
 });
 
 // Função para verificar se é o usuário logado
-function isUsuarioLogado(user: any): boolean {
-  return user.id === loggedUser!.id;
+function isLoggedUser(user: any): boolean {
+  return user.id === loggedUser.value?.id;
 }
 
 async function saveUser(userData: UserForm) {
@@ -79,23 +81,31 @@ async function saveUser(userData: UserForm) {
 }
 
 async function createUser(userData: UserForm) {
-  const { data, error } = await useAPI<User>("/auth/signup", {
+  const { error } = await useAPI<User>("/auth/signup", {
     method: "POST",
     body: userData,
   });
 
-  if (!error.value) {
+  if (error.value) {
+    if (error.value.statusCode === 409) feedback.show("Erro: um usuário com esses dados já existe!", "error");
+    if (error.value.statusCode === 400) feedback.show("Erro: dados inválidos!", "error");
+  } else {
+    feedback.show(`Usuário registrado com sucesso!`, "success");
     await refresh();
     closeModal();
   }
 }
 async function editUser(userData: UserForm) {
-  const { data, error } = await useAPI<User>(`/users/${userData.id}`, {
+  const { error } = await useAPI<User>(`/users/${userData.id}`, {
     method: "PATCH",
     body: userData,
   });
 
-  if (!error.value) {
+  if (error.value) {
+    if (error.value.statusCode === 409) feedback.show("Erro: um usuário com esses dados já existe!", "error");
+    if (error.value.statusCode === 400) feedback.show("Erro: dados inválidos!", "error");
+  } else {
+    feedback.show(`Usuário atualizado com sucesso!`, "success");
     await refresh();
     closeModal();
   }
@@ -107,8 +117,12 @@ async function deleteUser(userData: UserForm) {
     method: "DELETE",
   });
 
-  if (!error.value) {
+  if (error.value) {
+    feedback.show(`Erro ao remover usuário: ${error.value.message}`, "error");
+  } else {
+    feedback.show(`Usuário removido com sucesso!`, "success");
     await refresh();
+    closeModal();
   }
 }
 
@@ -116,12 +130,10 @@ function openModalCreate() {
   selectedUser.value = undefined;
   modalValue.value = true;
 }
-
 function openModalEdit(user: User) {
   selectedUser.value = { ...user };
   modalValue.value = true;
 }
-
 function closeModal() {
   modalValue.value = false;
   selectedUser.value = undefined;

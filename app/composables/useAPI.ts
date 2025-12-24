@@ -21,17 +21,18 @@ export function useAPI<T>(
     timeout: 10000,
 
     onRequest({ options, error, response }) {
-      if (tokenCookie) {  
+      if (tokenCookie) {
         options.headers.set("Authorization", `Bearer ${tokenCookie.value}`)
       }
     },
 
-    onResponseError({ response, error }) {
+    onResponse({ response, error }) {
       if (response.status === 401 || response.status === 403) {
         // Limpa cookies
         tokenCookie.value = null;
         userCookie.value = null;
-        
+        useLoggedUserStore().clearCredential();
+
         // Redireciona
         if (import.meta.client && (window.location.pathname !== '/signin')) {
           navigateTo('/signin')
