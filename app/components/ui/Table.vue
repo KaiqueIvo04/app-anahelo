@@ -9,7 +9,7 @@
           class="cursor-pointer"
           @click="sortColumn(col)"
         >
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 max-w-60">
             {{ col.label }}
 
             <!-- Indicador de ordenação -->
@@ -37,7 +37,7 @@
       >
         <td v-for="col in columns" :key="col.key">
           <div class="flex items-center gap-2">
-            {{ row[col.key] }}
+            <p class="line-clamp-1 max-w-60">{{ row[col.key] }}</p>
             <span 
               v-if="isRowDisabled(row) && col.key === columns[0]!.key" 
               class="badge badge-sm badge-info"

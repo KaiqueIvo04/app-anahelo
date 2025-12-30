@@ -1,46 +1,48 @@
 <template>
-  <Transition
-    enter-active-class="transition-all duration-300 ease-out"
-    enter-from-class="opacity-0 -translate-y-4"
-    enter-to-class="opacity-100 translate-y-0"
-    leave-active-class="transition-all duration-300 ease-in"
-    leave-from-class="opacity-100 translate-y-0"
-    leave-to-class="opacity-0 -translate-y-4"
-  >
-    <div
-      v-if="visible && message !== ''"
-      class="alert overflow-hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xl"
-      :class="{
-        'alert-error': type === 'error',
-        'alert-success': type === 'success',
-        'alert-warning': type === 'warning',
-        'alert-info': type === 'info',
-      }"
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 -translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-300 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-4"
     >
-      <span class="material-icons">{{ icon }}</span>
-
-      <span class="flex-1">{{ message }}</span>
-
-      <!-- Botão fechar -->
-      <button
-        @click="close"
-        class="btn btn-sm btn-ghost btn-circle ml-2"
-        aria-label="Fechar"
-      >
-        <span class="material-icons text-sm">close</span>
-      </button>
-
-      <!-- Barra de progresso -->
       <div
-        v-if="showProgress && duration > 0"
-        class="absolute bottom-0 left-0 h-1 bg-current opacity-30 transition-all ease-linear"
-        :style="{
-          width: `${progress}%`,
-          transitionDuration: `${duration}ms`,
+        v-if="visible && message !== ''"
+        class="alert overflow-hidden fixed top-4 left-1/2 -translate-x-1/2 z-9999 w-[90%] max-w-xl"
+        :class="{
+          'alert-error': type === 'error',
+          'alert-success': type === 'success',
+          'alert-warning': type === 'warning',
+          'alert-info': type === 'info',
         }"
-      />
-    </div>
-  </Transition>
+      >
+        <span class="material-icons">{{ icon }}</span>
+
+        <span class="flex-1">{{ message }}</span>
+
+        <!-- Botão fechar -->
+        <button
+          @click="close"
+          class="btn btn-sm btn-ghost btn-circle ml-2"
+          aria-label="Fechar"
+        >
+          <span class="material-icons text-sm">close</span>
+        </button>
+
+        <!-- Barra de progresso -->
+        <div
+          v-if="showProgress && duration > 0"
+          class="absolute bottom-0 left-0 h-1 bg-current opacity-30 transition-all ease-linear"
+          :style="{
+            width: `${progress}%`,
+            transitionDuration: `${duration}ms`,
+          }"
+        />
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

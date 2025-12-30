@@ -2,38 +2,38 @@
   <form @submit.prevent="saveUser" class="space-y-4">
     <div class="form-control">
       <label class="label">
-        <span class="label-text">Nome*</span>
+        <span class="label-text">Nome{{ user ? "" : "*" }}</span>
       </label>
       <input
         v-model="form.name"
         type="text"
         placeholder="Digite o nome"
         class="input input-bordered w-full"
-        required
+        :required="!user"
       />
     </div>
 
     <div class="form-control">
       <label class="label">
-        <span class="label-text">E-mail*</span>
+        <span class="label-text">E-mail{{ user ? "" : "*" }}</span>
       </label>
       <input
         v-model="form.email"
         type="email"
         placeholder="Digite o e-mail"
         class="input input-bordered w-full"
-        required
+        :required="!user"
       />
     </div>
 
     <div class="form-control">
       <label class="label">
-        <span class="label-text">Tipo*</span>
+        <span class="label-text">Tipo{{ user ? "" : "*" }}</span>
       </label>
       <select
         v-model="form.type"
         class="select select-bordered w-full"
-        required
+        :required="!user"
       >
         <option value="">Selecione...</option>
         <option value="admin">Administrador</option>

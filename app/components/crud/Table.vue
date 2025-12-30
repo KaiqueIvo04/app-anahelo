@@ -3,7 +3,7 @@
     <div class="flex justify-end p-2">
       <button
         v-if="!hideCreate && canCreate"
-        @click="emitirCriar"
+        @click="$emit('create')"
         class="btn btn-primary"
         :title="'Registrar'"
       >
@@ -24,8 +24,8 @@
         :hide-delete="hideDelete || !canDelete"
         :edit-label="editLabel"
         :delete-label="deleteLabel"
-        @edit="emitirEditar"
-        @delete="emitirExcluir"
+        @edit="row => $emit('edit', row)"
+        @delete="row => $emit('delete', row)"
       >
         <!-- Passa o slot de ações customizadas se existir -->
         <template #actions="{ row }">
@@ -77,10 +77,6 @@ const emit = defineEmits<{
   edit: [row: any];
   delete: [row: any];
 }>();
-
-function emitirCriar() {
-  emit("create");
-}
 
 function emitirEditar(row: any) {
   emit("edit", row);

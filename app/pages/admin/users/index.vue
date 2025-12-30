@@ -1,40 +1,35 @@
 <template>
-  <div class="w-full flex justify-center">
-    <div class="m-15 w-full max-w-4xl flex flex-col items-center">
-      <div class="w-full flex items-center gap-3 p-2">
-        <div class="h-8 border-l-4 border-primary"></div>
-        <span class="material-icons text-3xl"> group </span>
-        <h1 class="text-2xl font-semibold">Usuários</h1>
-      </div>
+  <div class="w-full flex items-center gap-3 p-2">
+    <div class="h-8 border-l-4 border-primary"></div>
+    <span class="material-icons text-3xl"> group </span>
+    <h1 class="text-2xl font-semibold">Usuários</h1>
+  </div>
 
-      <UiFeedBackAlert
-        :message="feedback.message.value"
-        :type="feedback.type.value",
+  <UiFeedBackAlert
+    :message="feedback.message.value"
+    :type="feedback.type.value"
+    ,
+  />
+
+  <div class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100">
+    <CrudTable
+      :rows="users || []"
+      :columns="columns"
+      :loading="pending"
+      :disable-row="isLoggedUser"
+      create-label="NOVO USUÁRIO"
+      @create="openModalCreate"
+      @edit="openModalEdit"
+      @delete="deleteUser"
+    />
+
+    <CrudModal v-model="modalValue" :title="modalTitle">
+      <FeatureUserForm
+        :user="selectedUser"
+        @save="saveUser"
+        @cancel="closeModal"
       />
-
-      <div
-        class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100"
-      >
-        <CrudTable
-          :rows="users || []"
-          :columns="columns"
-          :loading="pending"
-          :disable-row="isLoggedUser"
-          :create-label="'NOVO USUÁRIO'"
-          @create="openModalCreate"
-          @edit="openModalEdit"
-          @delete="deleteUser"
-        />
-
-        <CrudModal v-model="modalValue" :title="modalTitle">
-          <FeatureUserForm
-            :user="selectedUser"
-            @save="saveUser"
-            @cancel="closeModal"
-          />
-        </CrudModal>
-      </div>
-    </div>
+    </CrudModal>
   </div>
 </template>
 
@@ -87,8 +82,10 @@ async function createUser(userData: UserForm) {
   });
 
   if (error.value) {
-    if (error.value.statusCode === 409) feedback.show("Erro: um usuário com esses dados já existe!", "error");
-    if (error.value.statusCode === 400) feedback.show("Erro: dados inválidos!", "error");
+    if (error.value.statusCode === 409)
+      feedback.show("Erro: um usuário com esses dados já existe!", "error");
+    if (error.value.statusCode === 400)
+      feedback.show("Erro: dados inválidos!", "error");
   } else {
     feedback.show(`Usuário registrado com sucesso!`, "success");
     await refresh();
@@ -102,8 +99,10 @@ async function editUser(userData: UserForm) {
   });
 
   if (error.value) {
-    if (error.value.statusCode === 409) feedback.show("Erro: um usuário com esses dados já existe!", "error");
-    if (error.value.statusCode === 400) feedback.show("Erro: dados inválidos!", "error");
+    if (error.value.statusCode === 409)
+      feedback.show("Erro: um usuário com esses dados já existe!", "error");
+    if (error.value.statusCode === 400)
+      feedback.show("Erro: dados inválidos!", "error");
   } else {
     feedback.show(`Usuário atualizado com sucesso!`, "success");
     await refresh();

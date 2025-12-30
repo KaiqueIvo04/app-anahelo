@@ -1,0 +1,19 @@
+export interface Supplier {
+    id: string
+    name: string
+    cnpj: string | undefined
+    phone: string | undefined
+    email: string | undefined
+    address: string | undefined
+    created_at: string
+    updated_at: string
+}
+
+export interface SupplierForm {
+    id?: string
+    name?: string
+    cnpj?: string | undefined
+    phone?: string | undefined
+    email?: string | undefined
+    address?: string | undefined
+}

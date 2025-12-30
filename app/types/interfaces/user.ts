@@ -1,15 +1,17 @@
 export interface User {
-  id: string | undefined
-  name: string | undefined
-  email: string | undefined
-  type: string | undefined
+  id: string
+  name: string
+  email: string
+  type: string
+  created_at: string
+  updated_at: string
 }
 
 // Usado para criação e edição
 export interface UserForm {
-  id?: string | undefined
-  name: string | undefined
-  email: string | undefined
-  password?: string | undefined
-  type?: string | undefined
+  id?: string
+  name?: string
+  email?: string
+  password?: string
+  type?: string
 }
