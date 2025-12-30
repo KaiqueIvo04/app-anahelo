@@ -7,16 +7,19 @@
     </div>
 
     <div class="w-full px-5 mt-5">
-      <p class="mb-3 text-xl text-white text-center">Criar Conta</p>
+      <p class="mb-3 text-xl text-primary text-center">Criar Conta</p>
+
+      <UiFeedBackAlert :message="feedback.message.value" :type="feedback.type.value"/>
+
       <form
-        @submit.prevent="authenticate"
+        @submit.prevent="registerUser"
         class="flex flex-col items-center w-full"
       >
         <!-- Input name -->
         <label class="input input-bordered flex items-center gap-2 w-full mb-3">
           <span class="material-icons opacity-70">person</span>
           <input
-            v-model="name"
+            v-model="form.name"
             type="text"
             class="grow"
             placeholder="Digite seu nome"
@@ -26,7 +29,7 @@
         <label class="input input-bordered flex items-center gap-2 w-full mb-3">
           <span class="material-icons opacity-70">mail</span>
           <input
-            v-model="email"
+            v-model="form.email"
             type="text"
             class="grow"
             placeholder="Digite seu e-mail"
@@ -38,7 +41,7 @@
           <span class="material-icons opacity-70">password</span>
           <!-- Campo de senha -->
           <input
-            v-model="password"
+            v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
             class="grow"
             placeholder="Digite sua senha"
@@ -53,9 +56,15 @@
           </span>
         </label>
 
-        <button class="btn btn-primary w-full mb-2">Cadastrar</button>
+        <button class="btn btn-primary w-full mb-2" :disabled="loading">
+          <span v-if="loading" class="loading loading-dots loading-md"></span>
+          <span v-else>Cadastrar</span>
+        </button>
       </form>
-      <button @click="() => router.push('/signin')" class="btn btn-secondary w-full">
+      <button
+        @click="() => router.push('/signin')"
+        class="btn btn-secondary w-full"
+      >
         Voltar
       </button>
     </div>
@@ -63,24 +72,45 @@
 </template>
 
 <script setup lang="ts">
+import type { User, UserForm } from "~/types/interfaces/user";
+
 definePageMeta({
   layout: "public",
+  middleware: "guest",
 });
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-
-// const { theme, toggleTheme } = useTheme();
-const name = ref("");
-const email = ref("");
-const password = ref("");
+const form = reactive<UserForm>({
+  name: "",
+  password: "",
+  email: "",
+});
 const showPassword = ref(false);
+const loading = ref(false);
 const router = useRouter();
+const feedback = useFeedback();
 
-async function authenticate() {
-  const response = await useFetch(`${apiBaseUrl}/auth/signup`, {
-    method: "post",
-    body: { name: name.value, email: email.value, password: password.value },
+async function registerUser() {
+  loading.value = true;
+  feedback.clear();
+
+  const { error } = await useAPI<User>("/auth/signup", {
+    method: "POST",
+    body: { ...form, type: "admin" },
   });
-  console.log(response);
+
+  if (error.value) {
+    feedback.show(
+      error.value.data?.message || "Erro ao cadastrar usuário",
+      "error"
+    );
+    loading.value = false;
+    return;
+  }
+
+  feedback.show("Conta criada com sucesso!", "success");
+  setTimeout(() => {
+    router.push("/signin");
+  }, 1500);
+  loading.value = false;
 }
 </script>

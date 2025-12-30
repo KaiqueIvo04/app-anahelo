@@ -7,7 +7,13 @@
     </div>
 
     <div class="w-full px-5 mt-5">
-      <p class="mb-3 text-xl text-white text-center">Login</p>
+      <p class="mb-3 text-xl text-primary text-center">Login</p>
+
+      <UiFeedBackAlert
+        :message="feedback.message.value"
+        :type="feedback.type.value"
+      />
+
       <form
         @submit.prevent="authenticate"
         class="flex flex-col items-center w-full"
@@ -17,21 +23,24 @@
           <span class="material-icons opacity-70">mail</span>
           <input
             v-model="form.email"
-            type="text"
+            type="email"
             class="grow"
             placeholder="Digite seu e-mail"
+            required
+            :disabled="loading"
           />
         </label>
 
         <!-- Input senha -->
         <label class="input input-bordered flex items-center gap-2 w-full mb-3">
           <span class="material-icons opacity-70">password</span>
-          <!-- Campo de senha -->
           <input
             v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
             class="grow"
             placeholder="Digite sua senha"
+            required
+            :disabled="loading"
           />
 
           <!-- Botão de visibilidade -->
@@ -43,11 +52,20 @@
           </span>
         </label>
 
-        <button class="btn btn-primary w-full mb-2">Entrar</button>
+        <button
+          type="submit"
+          class="btn btn-primary w-full mb-2"
+          :disabled="loading"
+        >
+          <span v-if="loading" class="loading loading-spinner"></span>
+          {{ loading ? "Entrando..." : "Entrar" }}
+        </button>
       </form>
+
       <button
-        @click="() => router.push('/signup')"
+        @click="router.push('/signup')"
         class="btn btn-secondary w-full"
+        :disabled="loading"
       >
         Criar conta de administrador
       </button>
@@ -57,7 +75,6 @@
 
 <script setup lang="ts">
 import { jwtDecode } from "jwt-decode";
-import { useAPI } from "~/composables/useAPI";
 import { useLoggedUserStore } from "~/stores/userLogged.store";
 import type { LoginForm, LoginResponse } from "~/types/interfaces/auth";
 import { Theme } from "~/types/enums/theme.enum";
@@ -68,55 +85,89 @@ definePageMeta({
   middleware: "guest",
 });
 
-// const { theme, toggleTheme } = useTheme();
 const userStore = useLoggedUserStore();
+const router = useRouter();
+const config = useRuntimeConfig();
+const feedback = useFeedback();
+
 const form = reactive<LoginForm>({
   email: "",
   password: "",
 });
 
 const showPassword = ref(false);
-const router = useRouter();
+const loading = ref(false);
+const errorMessage = ref("");
 
 async function authenticate() {
-  try {
-    // Obter token
-    const loginResponse = await useAPI<LoginResponse>(`/auth/signin`, {
-      method: "post",
-      body: { email: form.email, password: form.password },
+  loading.value = true;
+  errorMessage.value = "";
+
+  const baseURL = config.public.apiBase;
+  const { data: loginResponse, error: loginError } =
+    await useFetch<LoginResponse>(`${baseURL}/auth/signin`, {
+      method: "POST",
+      body: {
+        email: form.email,
+        password: form.password,
+      },
     });
 
-    // Decodificar token
-    const token = loginResponse.data.value!.access_token;
+  if (loginError.value) {
+    const status = loginError.value.statusCode;
+    switch (status) {
+      case 401:
+        feedback.show("Email ou senha inválidos!", "error");
+        loading.value = false;
+        break;
+      case 400:
+        feedback.show("Um ou mais campos estão inválidos!", "error");
+        break;
+      case 500:
+        feedback.show("Erro interno no servidor!", "error");
+        break;
+      default:
+        feedback.show(
+          "Ocorreu um erro inesperado, verifique sua conexão com a internet!",
+          "error"
+        );
+        break;
+    }
+    loading.value = false;
+    form.password = "";
+
+  } else if (loginResponse.value) {
+    const token = loginResponse.value.access_token;
+
     const decodedToken = jwtDecode<{
       username: string;
       sub: string;
     }>(token);
 
-    // Obter informações do usuário
-    const userResponse = await useFetch<User>(
-      `${import.meta.env.VITE_API_BASE_URL}/users/${decodedToken.sub}`,
+    // Buscar dados do usuário manualmente com fetch, pois o token ainda não foi colocado no store
+    const { data: userData, error: userError } = await useFetch<User>(
+      `${config.public.apiBase}/users/${decodedToken.sub}`,
       {
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        method: "GET",
+        headers: { Authorization: "Bearer " + token },
       }
     );
 
-    // Guardar informações e redirecioanr para página
-    if (userResponse && userResponse.data) {
-      const user: User = userResponse.data.value!;
-      userStore.setUser(
-        user,
-        token,
-        localStorage.getItem(THEME_KEY) || Theme.LIGHT
-      );
-      router.push("/admin/home");
+    if (userError.value || !userData.value) {
+      feedback.show("Erro ao carregar dados do usuário!", "error");
+      return;
     }
-  } catch (error) {
-    console.error("Erro inesperado:", error);
+
+    // Salvar na store
+    const themeCookie = useCookie<Theme>("theme");
+    const currentTheme = themeCookie.value || Theme.LIGHT;
+    userStore.setUser(userData.value, token, currentTheme);
+
+    // Redirecionar usuário
+    await router.push("/admin/home");
+
     form.password = "";
+    loading.value = false;
   }
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-center items-center h-full">
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid md:grid-cols-3 sm:grid-cols-2 gap-4">
       <div
         v-for="card in cards" :key="card.to"
         class="card w-75 h-75 bg-base-300 shadow-sm rounded-3xl hover:bg-secondary transition ease duration-500"

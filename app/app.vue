@@ -4,15 +4,15 @@
   </NuxtLayout>
 </template>
 <script setup lang="ts">
-const { initTheme } = useTheme();
+// const { initTheme } = useTheme();
 
-onMounted(initTheme);
+// onMounted(initTheme);
 
-// Reaplica após cada navegação
-const route = useRoute();
-watch(() => route.path, () => {
-  nextTick(() => {
-    initTheme();
-  });
-});
+// // Reaplica após cada navegação
+// const route = useRoute();
+// watch(() => route.path, () => {
+//   nextTick(() => {
+//     initTheme();
+//   });
+// });
 </script>
