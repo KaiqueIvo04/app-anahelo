@@ -12,33 +12,35 @@ export const useLoggedUserStore = defineStore('loggedUser', {
     },
 
     actions: {
-        setUser(user: LoggedUser['user'], token: string, theme: Theme) {
+        setUser(user: LoggedUser['user'], token?: string, theme?: Theme) {
             this.user = user;
-            this.token = token;
-            this.theme = theme;
-
-            // ✅ Usa cookies ao invés de localStorage
             const userCookie = useCookie('user', {
                 maxAge: 60 * 60 * 24 * 7, // 7 dias
                 sameSite: 'lax',
             });
-            const tokenCookie = useCookie('auth_token', {
-                maxAge: 60 * 60 * 24 * 7,
-                sameSite: 'lax',
-                secure: import.meta.env.VITE_NODE_ENV === 'production',
-            });
-            const themeCookie = useCookie('theme', {
-                maxAge: 60 * 60 * 24 * 365, // 1 ano
-                sameSite: 'lax',
-            });
-
             userCookie.value = JSON.stringify(user);
-            tokenCookie.value = token;
-            themeCookie.value = theme;
 
-            // Aplica o tema no DOM (apenas no cliente)
-            if (import.meta.client) {
-                document.documentElement.setAttribute('data-theme', theme);
+            if (token) {
+                this.token = token;
+                const tokenCookie = useCookie('auth_token', {
+                    maxAge: 60 * 60 * 24 * 7,
+                    sameSite: 'lax',
+                    secure: import.meta.env.VITE_NODE_ENV === 'production',
+                });
+                tokenCookie.value = token;
+            }
+
+            if (theme) {
+                this.theme = theme;
+                const themeCookie = useCookie('theme', {
+                    maxAge: 60 * 60 * 24 * 365, // 1 ano
+                    sameSite: 'lax',
+                });
+                themeCookie.value = theme;
+                // Aplica o tema no DOM (apenas no cliente)
+                if (import.meta.client) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
             }
         },
 
@@ -51,8 +53,8 @@ export const useLoggedUserStore = defineStore('loggedUser', {
             const themeCookie = useCookie('theme');
 
             if (userCookie.value && tokenCookie.value && themeCookie.value) {
-                this.user = typeof userCookie.value === 'string' 
-                    ? JSON.parse(userCookie.value) 
+                this.user = typeof userCookie.value === 'string'
+                    ? JSON.parse(userCookie.value)
                     : userCookie.value;
                 this.token = tokenCookie.value;
                 this.theme = themeCookie.value as Theme;
@@ -66,7 +68,7 @@ export const useLoggedUserStore = defineStore('loggedUser', {
 
         setTheme(theme: Theme) {
             this.theme = theme;
-            
+
             const themeCookie = useCookie('theme', {
                 maxAge: 60 * 60 * 24 * 365,
                 sameSite: 'lax',

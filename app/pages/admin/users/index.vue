@@ -8,7 +8,6 @@
   <UiFeedBackAlert
     :message="feedback.message.value"
     :type="feedback.type.value"
-    ,
   />
 
   <div class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100">
@@ -45,6 +44,7 @@ const columns = [
 
 definePageMeta({
   layout: "private",
+  middleware: "auth",
 });
 
 const feedback = useFeedback();
@@ -55,7 +55,6 @@ if (error.value) {
 }
 
 const loggedUserStore = useLoggedUserStore();
-loggedUserStore.getCredential();
 
 const loggedUser = computed(() => loggedUserStore.user);
 const modalValue = ref(false);
@@ -137,4 +136,8 @@ function closeModal() {
   modalValue.value = false;
   selectedUser.value = undefined;
 }
+
+onMounted(() => {
+  loggedUserStore.getCredential();
+});
 </script>

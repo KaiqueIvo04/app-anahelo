@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex justify-center pb-4">
+    <div class="p-4">
       <button
         v-if="!hideCreate && canCreate"
         @click="$emit('create')"
@@ -11,7 +11,7 @@
         {{ createLabel }}
       </button>
     </div>
-    <div class="w-full grid lg:grid-cols-4 md:grid-cols-2 gap-10">
+    <div class="w-full grid lg:grid-cols-4 md:grid-cols-2 gap-10 mb-10">
       <slot />
     </div>
   </div>

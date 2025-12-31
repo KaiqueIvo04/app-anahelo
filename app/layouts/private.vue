@@ -147,12 +147,12 @@
 
 <script setup lang="ts">
 import { useLoggedUserStore } from "~/stores/userLogged.store";
-import type { User } from "~/types/interfaces/user";
 
 const router = useRouter();
 const loggedUserStore = useLoggedUserStore();
+loggedUserStore.getCredential();
 
-const user = ref<User | undefined>(loggedUserStore.user);
+const { user } = storeToRefs(loggedUserStore);
 const loggingOut = ref(false);
 
 // Lista de itens do menu

@@ -46,6 +46,7 @@ const columns = [
 
 definePageMeta({
   layout: "private",
+  middleware: "auth",
 });
 
 const feedback = useFeedback();

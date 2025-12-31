@@ -23,12 +23,16 @@
     <CrudCardGrid create-label="NOVO PRODUTO" @create="openModalCreate">
       <UiBaseCard
         v-for="product in products"
-        :key="product.name"
+        :key="product.id"
         :title="product.name"
         :description="product.description"
       >
         <template #header>
-          <figure v-if="product.image_base64" class="h-40 rounded-3xl" :class="{ skeleton: pending }">
+          <figure
+            v-if="product.image_base64"
+            class="h-40 rounded-3xl"
+            :class="{ skeleton: pending }"
+          >
             <img v-if="product.image_base64" :src="product.image_base64" />
           </figure>
           <div
@@ -39,9 +43,10 @@
           </div>
         </template>
 
+        <p><strong>ID:</strong> {{ product.id }}</p>
         <p><strong>Em estoque:</strong> {{ product.inventory_quantity }}</p>
-        <p><strong>Preço de compra:</strong> {{ product.cost }}</p>
-        <p><strong>Preço de venda:</strong> {{ product.price }}</p>
+        <p><strong>Preço de compra:</strong> R${{ product.cost }}</p>
+        <p><strong>Preço de venda:</strong> R${{ product.price }}</p>
 
         <template #footer>
           <button class="btn btn-accent" @click="openModalEdit(product)">
@@ -61,6 +66,7 @@ import type { Product, ProductForm } from "~/types/interfaces/product";
 
 definePageMeta({
   layout: "private",
+  middleware: "auth",
 });
 
 const feedback = useFeedback();
@@ -123,7 +129,7 @@ async function editProduct(productData: ProductForm) {
 }
 
 async function deleteProduct(productData: ProductForm) {
-  if (!confirm("Deseja realmente excluir este fornecedor?")) return;
+  if (!confirm("Deseja realmente excluir este produto?")) return;
 
   const { error } = await useAPI(`/products/${productData.id}`, {
     method: "DELETE",
@@ -131,11 +137,11 @@ async function deleteProduct(productData: ProductForm) {
 
   if (error.value) {
     feedback.show(
-      `Erro ao remover fornecedor: ${error.value.message}`,
+      `Erro ao remover produto: ${error.value.message}`,
       "error"
     );
   } else {
-    feedback.show(`Fornecedor removido com sucesso!`, "success");
+    feedback.show(`Produto removido com sucesso!`, "success");
     await refresh();
     closeModal();
   }

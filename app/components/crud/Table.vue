@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex justify-end p-2">
+    <div class="p-4">
       <button
         v-if="!hideCreate && canCreate"
         @click="$emit('create')"

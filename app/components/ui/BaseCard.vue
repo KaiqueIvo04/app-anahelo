@@ -1,7 +1,6 @@
 <template>
   <div
-    class="card card-sm bg-base-200 shadow-sm rounded-3xl
-           lg:h-[370px] md:h-[450px]
+    class="card card-sm w-full h-full bg-base-200 shadow-sm rounded-3xl max-w-sm
            hover:bg-gray-200 transition ease duration-300"
   >
     <!-- Header (opcional) -->
@@ -19,7 +18,7 @@
       <!-- Descrição -->
       <p
         v-if="description"
-        class="text-base-content/80 line-clamp-3"
+        class="text-base-content/80 line-clamp-2"
       >
         {{ description }}
       </p>

@@ -15,6 +15,7 @@
         </label>
         <legend class="fieldset-legend">Escolha uma foto</legend>
         <input
+          :disabled="disabled"
           @change="handleFileChange"
           type="file"
           class="file-input file-input-primary w-full"
@@ -31,9 +32,19 @@
         v-model="form.name"
         type="text"
         placeholder="Digite o nome do produto"
-        class="input input-bordered w-full"
+        :disabled="disabled"
+        class="input input-bordered validator w-full"
         :required="!product"
+        pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:[ .,/()\-][A-Za-zÀ-ÖØ-öø-ÿ0-9]+)*$"
+        title="Nome do produto inválido"
+        minlength="3"
+        maxlength="100"
       />
+
+      <p class="validator-hint">
+        Use letras, números e separadores comuns (espaço, hífen, ponto,
+        parênteses).
+      </p>
     </div>
 
     <div class="form-control">
@@ -44,9 +55,14 @@
         v-model="form.description"
         type="text"
         placeholder="Digite a descrição do produto"
-        class="input input-bordered w-full"
+        :disabled="disabled"
+        class="input input-bordered validator w-full"
         :required="!product"
+        title="Descrição do produto. (Max: 500 caracteres)"
+        minlength="3"
+        maxlength="500"
       />
+      <p class="validator-hint">A Descrição deve ter de 3 a 500 caracteres</p>
     </div>
 
     <div class="form-control">
@@ -57,16 +73,26 @@
         v-model="form.category"
         type="text"
         placeholder="Digite a categoria do produto"
-        class="input input-bordered w-full"
+        :disabled="disabled"
+        class="input input-bordered validator w-full"
         :required="!product"
+        title="Categoria do produto. (Max: 30 caracteres)"
+        minlength="3"
+        maxlength="30"
       />
+      <p class="validator-hint">A Descrição deve ter de 3 a 30 caracteres</p>
     </div>
 
     <div class="form-control">
       <label class="label">
         <span class="label-text">Fornecedor do produto</span>
       </label>
-      <select v-model="form.supplier_id" class="select select-bordered w-full">
+      <select
+        v-model="form.supplier_id"
+        :disabled="disabled"
+        class="select select-bordered w-full"
+        title="Fornecedor do produto. (Não obrigatório)"
+      >
         <option value="">Selecione um Fornecedor...</option>
         <option v-for="supplier in suppliers" :value="supplier.id">
           {{ supplier.name }}
@@ -85,49 +111,75 @@
         type="number"
         min="0"
         placeholder="Digite a quantidade em estoque do produto"
+        :disabled="disabled"
         class="input validator input-bordered w-full"
+        title="Quantidade do produto em estoque. (Min: 0)"
         :required="!product"
       />
+      <p class="validator-hint">Quantidade mínima em estoque é: 0</p>
     </div>
 
     <div class="form-control">
-      <label class="label">
-        <span class="label-text">Preço de compra{{ product ? "" : "*" }}</span>
+      <span class="label-text">Preço de custo{{ product ? "" : "*" }}:</span>
+      <label class="input input-bordered validator label mx-2">
+        <span class="label-text">R$</span>
+        <input
+          v-model="form.cost"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Digite o custo de compra do produto"
+          :disabled="disabled"
+          class="w-full"
+          title="Custo de compra do produto. Min: (R$0,00)"
+          :required="!product"
+        />
       </label>
-      <input
-        v-model="form.cost"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Digite o custo do produto"
-        class="input validator input-bordered w-full"
-        :required="!product"
-      />
+      <p class="validator-hint">O preço de custo mínimo é: R$0</p>
     </div>
 
     <div class="form-control">
-      <label class="label">
-        <span class="label-text">Preço de venda{{ product ? "" : "*" }}</span>
+      <span class="label-text">Preço de venda{{ product ? "" : "*" }}:</span>
+
+      <label class="input input-bordered validator label mx-2">
+        <span class="label-text">R$</span>
+        <input
+          v-model="form.price"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Digite o preço de venda do produto"
+          :disabled="disabled"
+          class="w-full"
+          title="Preço de venda do produto. Min: (R$0,00)"
+          :required="!product"
+        />
       </label>
-      <input
-        v-model="form.price"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Digite o preço de venda do produto"
-        class="input validator input-bordered w-full"
-        :required="!product"
-      />
+      <p class="validator-hint">O preço de venda mínimo é: R$0</p>
     </div>
 
-    <div class="flex gap-2 justify-end pt-4">
-      <button type="button" @click="cancel" class="btn btn-ghost">
-        Cancelar
+    <div class="flex justify-end">
+      <button
+        v-if="disabled"
+        type="button"
+        @click="
+          () => {
+            disabled = false;
+          }
+        "
+        class="btn btn-primary"
+      >
+        Editar
       </button>
-      <button type="submit" class="btn btn-primary" :disabled="saving">
-        <span v-if="saving" class="loading loading-spinner"></span>
-        {{ product ? "Atualizar" : "Criar" }}
-      </button>
+      <div v-else class="flex gap-2 justify-end">
+        <button type="button" @click="cancel" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" :disabled="saving">
+          <span v-if="saving" class="loading loading-spinner"></span>
+          {{ product ? "Atualizar" : "Criar" }}
+        </button>
+      </div>
     </div>
   </form>
 </template>
@@ -140,6 +192,10 @@ import type { Supplier } from "~/types/interfaces/supplier";
 const props = defineProps<{
   product?: Product;
 }>();
+
+const disabled = ref(false);
+// Se for edição fica desativado até clicar em "Editar"
+if (props.product) disabled.value = true;
 
 const emit = defineEmits<{
   save: [data: ProductForm];
@@ -213,7 +269,7 @@ function saveProduct() {
     category: form.category,
     supplier_id: form.supplier_id,
     inventory_quantity: Number(form.inventory_quantity),
-    cost: form.cost,
+    cost: Number(form.cost),
     price: Number(form.price),
   };
 
@@ -226,6 +282,7 @@ function saveProduct() {
 }
 
 function cancel() {
+  disabled.value = true;
   emit("cancel");
 }
 </script>

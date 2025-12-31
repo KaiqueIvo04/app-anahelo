@@ -23,6 +23,7 @@
 const cards = [
   { icon: "group", label: "Usuários", to: "/admin/users" },
   { icon: "inventory", label: "Produtos", to: "/admin/products" },
+  { icon: "warehouse", label: "Fornecedores", to: "/admin/suppliers" },
   { icon: "person", label: "Minha conta", to: "/admin/myaccount" },
 ];
 

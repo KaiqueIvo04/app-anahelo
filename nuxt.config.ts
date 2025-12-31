@@ -21,6 +21,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      title: "AnaHelo",
       link: [
         {
           rel: "stylesheet",

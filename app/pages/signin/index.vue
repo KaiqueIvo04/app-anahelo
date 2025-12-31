@@ -6,8 +6,8 @@
       <img class="w-40 rounded-full" src="~/assets/logos/anahelo_logo.png" />
     </div>
 
-    <div class="w-full px-5 mt-5">
-      <p class="mb-3 text-xl text-primary text-center">Login</p>
+    <div class="w-full px-5 mt-7">
+      <p class="mb-7 text-xl text-secondary text-center">Login</p>
 
       <UiFeedBackAlert
         :message="feedback.message.value"
@@ -19,28 +19,36 @@
         class="flex flex-col items-center w-full"
       >
         <!-- Input email -->
-        <label class="input input-bordered flex items-center gap-2 w-full mb-3">
+        <label
+          class="input input-bordered validator flex items-center gap-2 w-full"
+        >
           <span class="material-icons opacity-70">mail</span>
           <input
             v-model="form.email"
             type="email"
-            class="grow"
             placeholder="Digite seu e-mail"
             required
             :disabled="loading"
           />
         </label>
+        <div class="px-2 text-xs h-10 w-full text-gray-400">
+          Insira um e-mail válido
+        </div>
 
         <!-- Input senha -->
-        <label class="input input-bordered flex items-center gap-2 w-full mb-3">
+        <label
+          class="input input-bordered validator flex items-center gap-2 w-full"
+        >
           <span class="material-icons opacity-70">password</span>
           <input
             v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
-            class="grow"
             placeholder="Digite sua senha"
             required
             :disabled="loading"
+            title="A senha deve ter pelo menos 6 caracteres, inluindo:
+        Pelo menos um número, uma letra minúscula e uma maiúscula"
+            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
           />
 
           <!-- Botão de visibilidade -->
@@ -51,6 +59,10 @@
             {{ showPassword ? "visibility_off" : "visibility" }}
           </span>
         </label>
+        <div class="px-2 text-xs h-10 w-full text-gray-400">
+          A senha deve ter pelo menos 6 caracteres, uma letra maiúscula, uma
+          letra minúscula e um número
+        </div>
 
         <button
           type="submit"
@@ -135,7 +147,6 @@ async function authenticate() {
     }
     loading.value = false;
     form.password = "";
-
   } else if (loginResponse.value) {
     const token = loginResponse.value.access_token;
 
@@ -150,6 +161,8 @@ async function authenticate() {
       {
         method: "GET",
         headers: { Authorization: "Bearer " + token },
+        // Desabilita o cache
+        key: `login-${Date.now()}`, // Força uma chave única
       }
     );
 
