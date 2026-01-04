@@ -89,9 +89,9 @@
         <!-- Page content here -->
         <div class="p-4">
           <!-- Conteúdo -->
-          <main class="w-full h-dvh">
+          <main class="w-full">
             <div class="w-full flex justify-center">
-              <div class="mt-10 w-full max-w-7xl flex flex-col items-center">
+              <div class="my-10 w-full max-w-6xl flex flex-col items-center">
                 <slot />
               </div>
             </div>

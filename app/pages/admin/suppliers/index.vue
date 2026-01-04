@@ -16,10 +16,15 @@
       :rows="suppliers || []"
       :columns="columns"
       :loading="pending"
+      :page="currentPage"
+      :limit="itemsPerPage"
+      :total="total"
       create-label="NOVO FORNECEDOR"
       @create="openModalCreate"
       @edit="openModalEdit"
       @delete="deleteSupplier"
+      @update:page="handlePageChange"
+      @update:limit="handleLimitChange"
     />
 
     <CrudModal v-model="modalValue" :title="modalTitle">
@@ -50,12 +55,29 @@ definePageMeta({
 });
 
 const feedback = useFeedback();
-const {
-  data: suppliers,
-  pending,
-  refresh,
-  error,
-} = await useAPI<Supplier[]>("/suppliers");
+
+// Estado da paginação
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+
+const modalValue = ref(false);
+const selectedSupplier = ref<Supplier | undefined>(undefined);
+
+const modalTitle = computed(() => {
+  return selectedSupplier.value ? "EDITAR FORNECEDOR" : "REGISTRAR FORNECEDOR";
+});
+const suppliers = computed(() => data.value || []);
+
+const { data, pending, refresh, error, total } = await useAPI<Supplier[]>(
+  "/suppliers",
+  {
+    query: {
+      page: currentPage,
+      limit: itemsPerPage,
+    },
+    watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
+  }
+);
 
 if (error.value) {
   feedback.show(
@@ -64,12 +86,14 @@ if (error.value) {
   );
 }
 
-const modalValue = ref(false);
-const selectedSupplier = ref<Supplier | undefined>(undefined);
-
-const modalTitle = computed(() => {
-  return selectedSupplier.value ? "EDITAR FORNECEDOR" : "REGISTRAR FORNECEDOR";
-});
+// Handlers de paginação
+function handlePageChange(page: number) {
+  currentPage.value = page;
+}
+function handleLimitChange(limit: number) {
+  itemsPerPage.value = limit;
+  currentPage.value = 1;
+}
 
 async function saveSupplier(supplierData: SupplierForm) {
   if (selectedSupplier.value) await editSupplier(supplierData);

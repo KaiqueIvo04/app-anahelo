@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card card-sm w-full h-full bg-base-200 shadow-sm rounded-3xl max-w-sm
+    class="card card-sm w-full bg-base-200 shadow-sm rounded-3xl max-w-sm
            hover:bg-gray-200 transition ease duration-300"
   >
     <!-- Header (opcional) -->

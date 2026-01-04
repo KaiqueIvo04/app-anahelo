@@ -12,14 +12,19 @@
 
   <div class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100">
     <CrudTable
-      :rows="users || []"
+      :rows="users"
       :columns="columns"
       :loading="pending"
       :disable-row="isLoggedUser"
+      :page="currentPage"
+      :limit="itemsPerPage"
+      :total="total"
       create-label="NOVO USUÁRIO"
       @create="openModalCreate"
       @edit="openModalEdit"
       @delete="deleteUser"
+      @update:page="handlePageChange"
+      @update:limit="handleLimitChange"
     />
 
     <CrudModal v-model="modalValue" :title="modalTitle">
@@ -48,21 +53,42 @@ definePageMeta({
 });
 
 const feedback = useFeedback();
-const { data: users, pending, refresh, error } = await useAPI<User[]>("/users");
+const loggedUserStore = useLoggedUserStore();
+
+// Estado da paginação
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+
+const modalValue = ref(false);
+const selectedUser = ref<User | undefined>(undefined);
+
+loggedUserStore.getCredential();
+const loggedUser = computed(() => loggedUserStore.user);
+const modalTitle = computed(() => {
+  return selectedUser.value ? "EDITAR USUÁRIO" : "REGISTRAR USUÁRIO";
+});
+const users = computed(() => data.value || []);
+
+const { data, pending, refresh, error, total } = await useAPI<User[]>("/users", {
+  query: {
+    page: currentPage,
+    limit: itemsPerPage,
+  },
+  watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
+});
 
 if (error.value) {
   feedback.show(`Erro ao carregar usuários: ${error.value.message}`, "error");
 }
 
-const loggedUserStore = useLoggedUserStore();
-
-const loggedUser = computed(() => loggedUserStore.user);
-const modalValue = ref(false);
-const selectedUser = ref<User | undefined>(undefined);
-
-const modalTitle = computed(() => {
-  return selectedUser.value ? "EDITAR USUÁRIO" : "REGISTRAR USUÁRIO";
-});
+// Handlers de paginação
+function handlePageChange(page: number) {
+  currentPage.value = page;
+}
+function handleLimitChange(limit: number) {
+  itemsPerPage.value = limit;
+  currentPage.value = 1;
+}
 
 // Função para verificar se é o usuário logado
 function isLoggedUser(user: any): boolean {
@@ -136,8 +162,4 @@ function closeModal() {
   modalValue.value = false;
   selectedUser.value = undefined;
 }
-
-onMounted(() => {
-  loggedUserStore.getCredential();
-});
 </script>

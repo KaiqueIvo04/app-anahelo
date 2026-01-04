@@ -10,7 +10,7 @@
     :type="feedback.type.value"
   />
 
-  <div class="h-full flex justify-center items-center">
+  <div class="w-full">
     <CrudModal v-model="modalValue" :title="modalTitle">
       <FeatureProductForm
         v-if="modalValue"
@@ -20,9 +20,21 @@
       />
     </CrudModal>
 
-    <CrudCardGrid create-label="NOVO PRODUTO" @create="openModalCreate">
+    <CrudCardGrid
+      create-label="NOVO PRODUTO"
+      :page="currentPage"
+      :limit="itemsPerPage"
+      :total="total"
+      :sort-by="sortBy"
+      :sort-order="sortOrder"
+      :sort-options="sortOptions"
+      @create="openModalCreate"
+      @update:page="handlePageChange"
+      @update:limit="handleLimitChange"
+      @update:sort="handleSortChange"
+    >
       <UiBaseCard
-        v-for="product in products"
+        v-for="product in sortedProducts"
         :key="product.id"
         :title="product.name"
         :description="product.description"
@@ -70,6 +82,24 @@ definePageMeta({
 });
 
 const feedback = useFeedback();
+
+// Estado da paginação
+const currentPage = ref(1);
+const itemsPerPage = ref(8);
+
+// Estado da ordenação
+const sortBy = ref('name');
+const sortOrder = ref<'asc' | 'desc'>('asc');
+
+// Opções de ordenação disponíveis
+const sortOptions = [
+  { value: 'name', label: 'Nome' },
+  { value: 'price', label: 'Preço de venda' },
+  { value: 'cost', label: 'Preço de compra' },
+  { value: 'inventory_quantity', label: 'Estoque' },
+  { value: 'id', label: 'ID' },
+];
+
 const modalValue = ref(false);
 const selectedProduct = ref<Product | undefined>(undefined);
 const modalTitle = computed(() => {
@@ -77,14 +107,71 @@ const modalTitle = computed(() => {
 });
 
 const {
-  data: products,
+  data,
   pending,
   refresh,
   error,
-} = await useAPI<Product[]>("/products");
+  total,
+} = await useAPI<Product[]>("/products", {
+  query: {
+    page: currentPage,
+    limit: itemsPerPage,
+  },
+  watch: [currentPage, itemsPerPage],
+});
 
 if (error.value) {
   feedback.show(`Erro ao carregar produtos: ${error.value.message}`, "error");
+}
+
+// 👇 Produtos ordenados (client-side)
+const sortedProducts = computed(() => {
+  const products = data.value || [];
+  
+  // Cria uma cópia para não modificar o array original
+  const sorted = [...products];
+  
+  sorted.sort((a, b) => {
+    const aValue = a[sortBy.value as keyof Product];
+    const bValue = b[sortBy.value as keyof Product];
+    
+    // Trata valores undefined/null
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+    
+    // Comparação para números
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      return sortOrder.value === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+    
+    // Comparação para strings
+    const aStr = String(aValue).toLowerCase();
+    const bStr = String(bValue).toLowerCase();
+    
+    if (sortOrder.value === 'asc') {
+      return aStr.localeCompare(bStr);
+    } else {
+      return bStr.localeCompare(aStr);
+    }
+  });
+  
+  return sorted;
+});
+
+// Handlers de paginação
+function handlePageChange(page: number) {
+  currentPage.value = page;
+}
+
+function handleLimitChange(limit: number) {
+  itemsPerPage.value = limit;
+  currentPage.value = 1;
+}
+
+// Handler de ordenação
+function handleSortChange(newSortBy: string, newSortOrder: 'asc' | 'desc') {
+  sortBy.value = newSortBy;
+  sortOrder.value = newSortOrder;
 }
 
 async function saveProduct(productData: ProductForm) {
@@ -136,10 +223,7 @@ async function deleteProduct(productData: ProductForm) {
   });
 
   if (error.value) {
-    feedback.show(
-      `Erro ao remover produto: ${error.value.message}`,
-      "error"
-    );
+    feedback.show(`Erro ao remover produto: ${error.value.message}`, "error");
   } else {
     feedback.show(`Produto removido com sucesso!`, "success");
     await refresh();
@@ -151,10 +235,12 @@ function openModalCreate() {
   selectedProduct.value = undefined;
   modalValue.value = true;
 }
+
 function openModalEdit(product: Product) {
   selectedProduct.value = { ...product };
   modalValue.value = true;
 }
+
 function closeModal() {
   modalValue.value = false;
   selectedProduct.value = undefined;
