@@ -1,15 +1,12 @@
-// composables/useTheme.ts
-import { Theme } from "~/types/enums/theme.enum";
-
 export const useTheme = () => {
   const config = useRuntimeConfig();
-  const themeCookie = useCookie<Theme>('theme', {
+  const themeCookie = useCookie<string>('theme', {
     maxAge: 60 * 60 * 24 * 365, // 1 ano
     sameSite: 'lax',
-    default: () => (config.public.defaultTheme as Theme) || Theme.LIGHT,
+    default: () => (config.public.defaultTheme) || config.public.defaultTheme,
   });
 
-  const applyTheme = (theme: Theme) => {
+  const applyTheme = (theme: string) => {
     themeCookie.value = theme;
     
     // Aplica no DOM apenas no cliente
@@ -18,8 +15,8 @@ export const useTheme = () => {
     }
   };
 
-  const getTheme = (): Theme => {
-    return themeCookie.value || (config.public.defaultTheme as Theme) || Theme.LIGHT;
+  const getTheme = (): string => {
+    return themeCookie.value || (config.public.defaultTheme) || config.public.defaultTheme;
   };
 
   const initTheme = () => {
@@ -51,7 +48,7 @@ export const useTheme = () => {
 
   const toggleTheme = () => {
     const currentTheme = getTheme();
-    const newTheme = currentTheme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT;
+    const newTheme = currentTheme === config.public.defaultTheme ? config.public.darkTheme : config.public.defaultTheme;
     applyTheme(newTheme);
   };
 

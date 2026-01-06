@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import { Theme } from "~/types/enums/theme.enum";
 import type { LoggedUser } from "~/types/interfaces/logged.user";
 
 export const useLoggedUserStore = defineStore('loggedUser', {
@@ -12,7 +11,7 @@ export const useLoggedUserStore = defineStore('loggedUser', {
     },
 
     actions: {
-        setUser(user: LoggedUser['user'], token?: string, theme?: Theme) {
+        setUser(user: LoggedUser['user'], token?: string, theme?: string) {
             this.user = user;
             const userCookie = useCookie('user', {
                 maxAge: 60 * 60 * 24 * 7, // 7 dias
@@ -57,7 +56,7 @@ export const useLoggedUserStore = defineStore('loggedUser', {
                     ? JSON.parse(userCookie.value)
                     : userCookie.value;
                 this.token = tokenCookie.value;
-                this.theme = themeCookie.value as Theme;
+                this.theme = themeCookie.value;
 
                 // Aplica o tema no DOM (apenas no cliente)
                 if (import.meta.client && this.theme) {
@@ -66,7 +65,7 @@ export const useLoggedUserStore = defineStore('loggedUser', {
             }
         },
 
-        setTheme(theme: Theme) {
+        setTheme(theme: string) {
             this.theme = theme;
 
             const themeCookie = useCookie('theme', {
@@ -82,9 +81,10 @@ export const useLoggedUserStore = defineStore('loggedUser', {
         },
 
         toggleTheme() {
+            const config = useRuntimeConfig();
             const themeCookie = useCookie('theme');
             const currentTheme = this.theme || themeCookie.value;
-            const newTheme = currentTheme === Theme.LIGHT ? Theme.DARK : Theme.LIGHT;
+            const newTheme = currentTheme === config.public.defaultTheme ? config.public.darkTheme : config.public.defaultTheme;
             this.setTheme(newTheme);
         },
 
