@@ -43,7 +43,7 @@
         @edit="row => $emit('edit', row)"
         @delete="row => $emit('delete', row)"
       >
-        <template #actions="{ row }">
+        <template v-if="showDefaultActions" #actions="{ row }">
           <slot name="actions" :row="row" />
         </template>
       </UiTable>

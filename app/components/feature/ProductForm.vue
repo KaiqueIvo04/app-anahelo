@@ -80,7 +80,7 @@
         minlength="3"
         maxlength="30"
       />
-      <p class="validator-hint">A Descrição deve ter de 3 a 30 caracteres</p>
+      <p class="validator-hint">A Categoria deve ter de 3 a 30 caracteres</p>
     </div>
 
     <div class="form-control">
@@ -98,25 +98,6 @@
           {{ supplier.name }}
         </option>
       </select>
-    </div>
-
-    <div class="form-control">
-      <label class="label">
-        <span class="label-text"
-          >Quantidade em estoque{{ product ? "" : "*" }}</span
-        >
-      </label>
-      <input
-        v-model="form.inventory_quantity"
-        type="number"
-        min="0"
-        placeholder="Digite a quantidade em estoque do produto"
-        :disabled="disabled"
-        class="input validator input-bordered w-full"
-        title="Quantidade do produto em estoque. (Min: 0)"
-        :required="!product"
-      />
-      <p class="validator-hint">Quantidade mínima em estoque é: 0</p>
     </div>
 
     <div class="form-control">
@@ -158,7 +139,7 @@
       <p class="validator-hint">O preço de venda mínimo é: R$0</p>
     </div>
 
-    <div class="flex justify-end">
+    <div class="flex justify-end gap-2">
       <button
         v-if="disabled"
         type="button"
@@ -167,9 +148,17 @@
             disabled = false;
           }
         "
-        class="btn btn-primary"
+        class="btn btn-accent"
       >
         Editar
+      </button>
+      <button
+        v-if="disabled"
+        type="button"
+        @click="$emit('remove', props.product!)"
+        class="btn btn-error"
+      >
+        Remover
       </button>
       <div v-else class="flex gap-2 justify-end">
         <button type="button" @click="cancel" class="btn btn-ghost">
@@ -199,6 +188,7 @@ if (props.product) disabled.value = true;
 
 const emit = defineEmits<{
   save: [data: ProductForm];
+  remove: [data: ProductForm];
   cancel: [];
 }>();
 
@@ -279,6 +269,12 @@ function saveProduct() {
   emit("save", dados);
 
   saving.value = false;
+}
+
+function deleteProduct() {
+  const dados: ProductForm = {
+    
+  }
 }
 
 function cancel() {

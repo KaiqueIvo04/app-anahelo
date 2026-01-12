@@ -109,11 +109,10 @@ const form = reactive<LoginForm>({
 
 const showPassword = ref(false);
 const loading = ref(false);
-const errorMessage = ref("");
 
 async function authenticate() {
   loading.value = true;
-  errorMessage.value = "";
+  feedback.clear();
 
   const baseURL = config.public.apiBase;
   const { data: loginResponse, error: loginError } =
@@ -135,9 +134,6 @@ async function authenticate() {
       case 400:
         feedback.show("Um ou mais campos estão inválidos!", "error");
         break;
-      case 500:
-        feedback.show("Erro interno no servidor!", "error");
-        break;
       default:
         feedback.show(
           "Ocorreu um erro inesperado, verifique sua conexão com a internet!",
@@ -147,6 +143,7 @@ async function authenticate() {
     }
     loading.value = false;
     form.password = "";
+
   } else if (loginResponse.value) {
     const token = loginResponse.value.access_token;
 

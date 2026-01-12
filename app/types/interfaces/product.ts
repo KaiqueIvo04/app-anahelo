@@ -8,8 +8,8 @@ export interface Product {
     inventory_quantity: number
     cost: number
     price: number
-    created_at: string
-    updated_at: string
+    createdAt: string
+    updatedAt: string
 }
 
 export interface ProductForm {

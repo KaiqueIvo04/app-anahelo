@@ -19,7 +19,7 @@
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
-      create-label="NOVO FORNECEDOR"
+      create-label="REGISTRAR FORNECEDOR"
       @create="openModalCreate"
       @edit="openModalEdit"
       @delete="deleteSupplier"
@@ -54,8 +54,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const feedback = useFeedback();
-
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
@@ -68,23 +66,15 @@ const modalTitle = computed(() => {
 });
 const suppliers = computed(() => data.value || []);
 
-const { data, pending, refresh, error, total } = await useAPI<Supplier[]>(
-  "/suppliers",
-  {
-    query: {
-      page: currentPage,
-      limit: itemsPerPage,
-    },
-    watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
-  }
-);
-
-if (error.value) {
-  feedback.show(
-    `Erro ao carregar fornecedores: ${error.value.message}`,
-    "error"
-  );
-}
+const { data, pending, refresh, error, feedback, total } = await useAPI<
+  Supplier[]
+>("/suppliers", {
+  query: {
+    page: currentPage,
+    limit: itemsPerPage,
+  },
+  watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
+});
 
 // Handlers de paginação
 function handlePageChange(page: number) {
@@ -96,6 +86,7 @@ function handleLimitChange(limit: number) {
 }
 
 async function saveSupplier(supplierData: SupplierForm) {
+  feedback.clear();
   if (selectedSupplier.value) await editSupplier(supplierData);
   else await createSupplier(supplierData);
 }
@@ -125,7 +116,7 @@ async function editSupplier(supplierData: SupplierForm) {
 
   if (error.value) {
     if (error.value.statusCode === 409)
-      feedback.show("Erro: um fornecedor com esses dados já existe!", "error");
+      feedback.show("Erro: um fornecedor com esse CNPJ já existe!", "error");
     if (error.value.statusCode === 400)
       feedback.show("Erro: dados inválidos!", "error");
   } else {
@@ -135,6 +126,7 @@ async function editSupplier(supplierData: SupplierForm) {
   }
 }
 async function deleteSupplier(supplierData: SupplierForm) {
+  feedback.clear();
   if (!confirm("Deseja realmente excluir este fornecedor?")) return;
 
   const { error } = await useAPI(`/suppliers/${supplierData.id}`, {
@@ -142,10 +134,12 @@ async function deleteSupplier(supplierData: SupplierForm) {
   });
 
   if (error.value) {
-    feedback.show(
-      `Erro ao remover fornecedor: ${error.value.message}`,
-      "error"
-    );
+    if (error.value.statusCode === 404) {
+      feedback.show(
+        `Erro: O fornecedor não existe ou já foi removido!`,
+        "error"
+      );
+    }
   } else {
     feedback.show(`Fornecedor removido com sucesso!`, "success");
     await refresh();
@@ -153,6 +147,7 @@ async function deleteSupplier(supplierData: SupplierForm) {
   }
 }
 
+// Funções do Modal
 function openModalCreate() {
   selectedSupplier.value = undefined;
   modalValue.value = true;

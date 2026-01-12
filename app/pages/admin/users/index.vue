@@ -19,7 +19,7 @@
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
-      create-label="NOVO USUÁRIO"
+      create-label="REGISTRAR USUÁRIO"
       @create="openModalCreate"
       @edit="openModalEdit"
       @delete="deleteUser"
@@ -52,7 +52,6 @@ definePageMeta({
   middleware: "auth",
 });
 
-const feedback = useFeedback();
 const loggedUserStore = useLoggedUserStore();
 
 // Estado da paginação
@@ -69,17 +68,16 @@ const modalTitle = computed(() => {
 });
 const users = computed(() => data.value || []);
 
-const { data, pending, refresh, error, total } = await useAPI<User[]>("/users", {
-  query: {
-    page: currentPage,
-    limit: itemsPerPage,
-  },
-  watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
-});
-
-if (error.value) {
-  feedback.show(`Erro ao carregar usuários: ${error.value.message}`, "error");
-}
+const { data, pending, refresh, error, feedback, total } = await useAPI<User[]>(
+  "/users",
+  {
+    query: {
+      page: currentPage,
+      limit: itemsPerPage,
+    },
+    watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
+  }
+);
 
 // Handlers de paginação
 function handlePageChange(page: number) {
@@ -95,11 +93,12 @@ function isLoggedUser(user: any): boolean {
   return user.id === loggedUser.value?.id;
 }
 
+// Funções de CRUD
 async function saveUser(userData: UserForm) {
+  feedback.clear();
   if (selectedUser.value) await editUser(userData);
   else await createUser(userData);
 }
-
 async function createUser(userData: UserForm) {
   const { error } = await useAPI<User>("/auth/signup", {
     method: "POST",
@@ -107,10 +106,12 @@ async function createUser(userData: UserForm) {
   });
 
   if (error.value) {
-    if (error.value.statusCode === 409)
+    if (error.value.statusCode === 409) {
       feedback.show("Erro: um usuário com esses dados já existe!", "error");
-    if (error.value.statusCode === 400)
+    }
+    if (error.value.statusCode === 400) {
       feedback.show("Erro: dados inválidos!", "error");
+    }
   } else {
     feedback.show(`Usuário registrado com sucesso!`, "success");
     await refresh();
@@ -124,10 +125,12 @@ async function editUser(userData: UserForm) {
   });
 
   if (error.value) {
-    if (error.value.statusCode === 409)
-      feedback.show("Erro: um usuário com esses dados já existe!", "error");
-    if (error.value.statusCode === 400)
+    if (error.value.statusCode === 409) {
+      feedback.show("Erro: um usuário com esse E-mail já existe!", "error");
+    }
+    if (error.value.statusCode === 400) {
       feedback.show("Erro: dados inválidos!", "error");
+    }
   } else {
     feedback.show(`Usuário atualizado com sucesso!`, "success");
     await refresh();
@@ -135,6 +138,7 @@ async function editUser(userData: UserForm) {
   }
 }
 async function deleteUser(userData: UserForm) {
+  feedback.clear();
   if (!confirm("Deseja realmente excluir este usuário?")) return;
 
   const { error } = await useAPI(`/users/${userData.id}`, {
@@ -142,7 +146,9 @@ async function deleteUser(userData: UserForm) {
   });
 
   if (error.value) {
-    feedback.show(`Erro ao remover usuário: ${error.value.message}`, "error");
+    if (error.value.statusCode === 404) {
+      feedback.show(`Erro: O Usuário não existe ou já foi removido!`, "error");
+    }
   } else {
     feedback.show(`Usuário removido com sucesso!`, "success");
     await refresh();
@@ -150,6 +156,7 @@ async function deleteUser(userData: UserForm) {
   }
 }
 
+// Funções do Modal
 function openModalCreate() {
   selectedUser.value = undefined;
   modalValue.value = true;

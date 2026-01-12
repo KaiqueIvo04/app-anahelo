@@ -158,6 +158,21 @@ const loggingOut = ref(false);
 // Lista de itens do menu
 const menuItems = [
   { icon: "home", label: "Início", to: "/admin/home" },
+  {
+    icon: "add",
+    label: "Compras",
+    to: "/admin/purchases",
+  },
+  {
+    icon: "sell",
+    label: "Vendas",
+    to: "/admin/sales",
+  },
+  {
+    icon: "swap_vertical_circle",
+    label: "Movimentações",
+    to: "/admin/inventory_movements",
+  },
   { icon: "group", label: "Usuários", to: "/admin/users" },
   { icon: "inventory", label: "Produtos", to: "/admin/products" },
   { icon: "warehouse", label: "Fornecedores", to: "/admin/suppliers" },

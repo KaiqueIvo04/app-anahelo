@@ -55,8 +55,10 @@
       </div>
     </div>
 
-    <div class="w-full grid lg:grid-cols-4 md:grid-cols-2 gap-10">
-      <slot />
+    <div class="flex justify-center">
+      <div class="grid lg:grid-cols-3 md:grid-cols-2 gap-10 p-4 lg:min-w-full">
+        <slot />
+      </div>
     </div>
 
     <!-- Paginação -->

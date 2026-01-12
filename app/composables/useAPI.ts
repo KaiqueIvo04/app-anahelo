@@ -5,10 +5,11 @@ export async function useAPI<T>(
   url: string | (() => string),
   options: UseFetchOptions<T> = {},
 ) {
-  const total = ref<number>(0)
-  const config = useRuntimeConfig()
-  const tokenCookie = useCookie('auth_token')
-  const userCookie = useCookie('user')
+  const total = ref<number>(0);
+  const config = useRuntimeConfig();
+  const tokenCookie = useCookie('auth_token');
+  const userCookie = useCookie('user');
+  const feedback = useFeedback();
 
   // ✅ Cria headers dinamicamente
   const headers: Record<string, string> = {
@@ -29,26 +30,45 @@ export async function useAPI<T>(
 
     onResponse({ response }) {
       // Tratamento de erros vindos da API
-      if (response.status === 401 || response.status === 403) {
-        // Limpa cookies
-        tokenCookie.value = null;
-        userCookie.value = null;
-        useLoggedUserStore().clearCredential();
+      feedback.clear();
+      switch (response.status) {
+        case 401:
+          tokenCookie.value = null;
+          userCookie.value = null;
+          useLoggedUserStore().clearCredential();
 
-        // Redireciona
-        if (import.meta.client && (window.location.pathname !== '/signin')) {
-          navigateTo('/signin')
-        }
+          feedback.show(
+            "Erro: Você não está autenticado(a)!",
+            "error"
+          );
+
+          // Redireciona
+          if (import.meta.client && (window.location.pathname !== '/signin')) {
+            navigateTo('/signin')
+          }
+          break;
+        case 403:
+          feedback.show(
+            "Erro: Você não tem permissão para acessar esse recurso!",
+            "error"
+          );
+          break;
+        case 404:
+          feedback.show(
+            "Erro: O(s) recurso(s) solicitado não foi encontrado!",
+            "error"
+          );
+          break;
+        case 500:
+          feedback.show(
+            "Erro interno no servidor. Tente novamente mais tarde.",
+            "error"
+          );
+        default:
+          break;
       }
 
-      if (response.status >= 500) {
-        useFeedback().show(
-          "Erro interno no servidor. Tente novamente mais tarde.",
-          "error"
-        );
-      }
-
-      // Captura x-total-count
+      // Captura o total de itens
       const totalCount = response.headers.get('x-total-count')
       if (totalCount) {
         total.value = parseInt(totalCount, 10)
@@ -63,6 +83,7 @@ export async function useAPI<T>(
     refresh: response.refresh,
     execute: response.execute,
     status: response.status,
-    total, // Adiciona o total
+    feedback,
+    total,
   }
 }

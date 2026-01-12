@@ -5,8 +5,8 @@ export interface Supplier {
     phone: string | undefined
     email: string | undefined
     address: string | undefined
-    created_at: string
-    updated_at: string
+    createdAt: string
+    updatedAt: string
 }
 
 export interface SupplierForm {

@@ -10,18 +10,19 @@
     :type="feedback.type.value"
   />
 
-  <div class="w-full">
+  <div class="w-full mt-6 border border-base-300 bg-base-100">
     <CrudModal v-model="modalValue" :title="modalTitle">
       <FeatureProductForm
         v-if="modalValue"
         @save="saveProduct"
+        @remove="deleteProduct"
         @cancel="closeModal"
         :product="selectedProduct"
       />
     </CrudModal>
 
     <CrudCardGrid
-      create-label="NOVO PRODUTO"
+      create-label="REGISTRAR PRODUTO"
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
@@ -36,8 +37,11 @@
       <UiBaseCard
         v-for="product in sortedProducts"
         :key="product.id"
+        :id="product.id"
         :title="product.name"
         :description="product.description"
+        @click="openModalEdit(product)"
+        class="cursor-pointer"
       >
         <template #header>
           <figure
@@ -51,25 +55,23 @@
             v-else
             class="flex items-center justify-center h-40 rounded-3xl text-gray-400 bg-base-300"
           >
-            <span class="material-icons !text-5xl">image_not_supported</span>
+            <span class="material-icons text-5xl!">image_not_supported</span>
           </div>
         </template>
 
-        <p><strong>ID:</strong> {{ product.id }}</p>
-        <p><strong>Em estoque:</strong> {{ product.inventory_quantity }}</p>
-        <p><strong>Preço de compra:</strong> R${{ product.cost }}</p>
-        <p><strong>Preço de venda:</strong> R${{ product.price }}</p>
-
-        <template #footer>
-          <button class="btn btn-accent" @click="openModalEdit(product)">
-            Editar
-          </button>
-          <button class="btn btn-error" @click="deleteProduct(product)">
-            Remover
-          </button>
-        </template>
+        <div class="w-full badge badge-outline mb-2"><strong>Em estoque:</strong> {{ product.inventory_quantity }}</div>
+        <div class="w-full flex gap-2">
+          <div class="w-1/2 h-12 text-xs badge badge-warning"><strong> ▼ Preço de compra:</strong> R${{ product.cost }}</div>
+          <div class="w-1/2 h-12 text-xs badge badge-success"><strong> ▲ Preço de venda:</strong> R${{ product.price }}</div>
+        </div>
       </UiBaseCard>
     </CrudCardGrid>
+    <div
+      v-if="sortedProducts.length === 0"
+      class="text-center p-6 my-20 opacity-70"
+    >
+      Nenhum registro encontrado
+    </div>
   </div>
 </template>
 
@@ -81,23 +83,21 @@ definePageMeta({
   middleware: "auth",
 });
 
-const feedback = useFeedback();
-
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(8);
 
 // Estado da ordenação
-const sortBy = ref('name');
-const sortOrder = ref<'asc' | 'desc'>('asc');
+const sortBy = ref("name");
+const sortOrder = ref<"asc" | "desc">("asc");
 
 // Opções de ordenação disponíveis
 const sortOptions = [
-  { value: 'name', label: 'Nome' },
-  { value: 'price', label: 'Preço de venda' },
-  { value: 'cost', label: 'Preço de compra' },
-  { value: 'inventory_quantity', label: 'Estoque' },
-  { value: 'id', label: 'ID' },
+  { value: "name", label: "Nome" },
+  { value: "price", label: "Preço de venda" },
+  { value: "cost", label: "Preço de compra" },
+  { value: "inventory_quantity", label: "Estoque" },
+  { value: "id", label: "ID" },
 ];
 
 const modalValue = ref(false);
@@ -106,13 +106,9 @@ const modalTitle = computed(() => {
   return selectedProduct.value ? "EDITAR PRODUTO" : "REGISTRAR PRODUTO";
 });
 
-const {
-  data,
-  pending,
-  refresh,
-  error,
-  total,
-} = await useAPI<Product[]>("/products", {
+const { data, pending, refresh, error, feedback, total } = await useAPI<
+  Product[]
+>("/products", {
   query: {
     page: currentPage,
     limit: itemsPerPage,
@@ -120,41 +116,37 @@ const {
   watch: [currentPage, itemsPerPage],
 });
 
-if (error.value) {
-  feedback.show(`Erro ao carregar produtos: ${error.value.message}`, "error");
-}
-
 // 👇 Produtos ordenados (client-side)
 const sortedProducts = computed(() => {
   const products = data.value || [];
-  
+
   // Cria uma cópia para não modificar o array original
   const sorted = [...products];
-  
+
   sorted.sort((a, b) => {
     const aValue = a[sortBy.value as keyof Product];
     const bValue = b[sortBy.value as keyof Product];
-    
+
     // Trata valores undefined/null
     if (aValue == null) return 1;
     if (bValue == null) return -1;
-    
+
     // Comparação para números
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortOrder.value === 'asc' ? aValue - bValue : bValue - aValue;
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return sortOrder.value === "asc" ? aValue - bValue : bValue - aValue;
     }
-    
+
     // Comparação para strings
     const aStr = String(aValue).toLowerCase();
     const bStr = String(bValue).toLowerCase();
-    
-    if (sortOrder.value === 'asc') {
+
+    if (sortOrder.value === "asc") {
       return aStr.localeCompare(bStr);
     } else {
       return bStr.localeCompare(aStr);
     }
   });
-  
+
   return sorted;
 });
 
@@ -169,7 +161,7 @@ function handleLimitChange(limit: number) {
 }
 
 // Handler de ordenação
-function handleSortChange(newSortBy: string, newSortOrder: 'asc' | 'desc') {
+function handleSortChange(newSortBy: string, newSortOrder: "asc" | "desc") {
   sortBy.value = newSortBy;
   sortOrder.value = newSortOrder;
 }
