@@ -41,7 +41,7 @@
             <!-- Renderização dinâmica -->
             <template v-if="isBadge(getFormattedValue(row, col))">
               <span
-                class="badge badge-sm"
+                class="badge badge-md w-full flex justify-start"
                 :class="getFormattedValue(row, col).class"
               >
                 <span
@@ -55,16 +55,22 @@
             </template>
 
             <template v-else>
-              <p class="line-clamp-1 max-w-60">
+              <p class="line-clamp-2 max-w-60">
                 {{ getFormattedValue(row, col) }}
               </p>
+              <!-- PARA LISTA DE USUÁRIOS -->
+              <span
+                v-if="isRowDisabled(row) && col.key === columns[0]!.key"
+                class="badge badge-sm badge-info"
+              >
+                Você
+              </span>
             </template>
           </div>
         </td>
 
         <td v-if="$slots.actions || showDefaultActions">
           <slot name="actions" :row="row" :disabled="isRowDisabled(row)">
-            
             <!-- Ações padrão se não houver slot customizado -->
             <div class="flex gap-2" v-if="showDefaultActions">
               <button
@@ -161,6 +167,7 @@ const rowKey = props.rowKey ?? ((row) => row.id ?? JSON.stringify(row));
 function getValue(row: any, key: string) {
   return key.split(".").reduce((obj, prop) => obj?.[prop], row);
 }
+// Aplica formatador se existir
 function getFormattedValue(row: any, col: Column) {
   const value = getValue(row, col.key);
   return col.formatter ? col.formatter(value, row) : value;

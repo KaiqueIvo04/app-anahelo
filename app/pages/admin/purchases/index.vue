@@ -10,7 +10,7 @@
     :type="feedback.type.value"
   />
 
-  <div class="w-full mt-6 border border-base-300 bg-base-100">
+  <div class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100">
     <CrudTable
       create-label="REGISTRAR COMPRA"
       :rows="movements"
@@ -28,7 +28,7 @@
   </div>
   <CrudModal v-model="modalValue" :title="modalTitle">
     <FeatureBuyMovementForm @save="saveMovement" @cancel="closeModal" />
-  </CrudModal>  
+  </CrudModal>
 </template>
 
 <script setup lang="ts">
@@ -46,9 +46,6 @@ definePageMeta({
 });
 
 const columns = [
-  { key: "id", label: "ID" },
-  { key: "date_movement", label: "Data" },
-  { key: "product.name", label: "Produto" },
   {
     key: "type",
     label: "Tipo",
@@ -62,6 +59,20 @@ const columns = [
       };
     },
   },
+  { key: "id", label: "ID" },
+  {
+    key: "date_movement",
+    label: "Data",
+    formatter: (value: string | Date) => {
+      if (!value) return "-";
+
+      return new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(new Date(value));
+    },
+  },
+  { key: "product.name", label: "Produto" },
   { key: "quantity", label: "Quantidade" },
   { key: "observation", label: "Observação" },
 ];
@@ -80,7 +91,7 @@ const modalTitle = computed(() => {
     : "REGISTRAR MOVIMENTAÇÃO";
 });
 
-const filter: string = `filter={"type":"buy"}`
+const filter: string = `filter={"type":"buy"}`;
 const { data, pending, refresh, error, feedback, total } = await useAPI<
   InventoryMovement[]
 >(`/inventory-movements?${filter}`, {

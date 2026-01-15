@@ -1,4 +1,5 @@
 import type { MovementType } from "~/types/enums/movement_type";
+import type { PaymentMethod } from "~/types/enums/payment_method";
 
 export const movementTypeMeta: Record<
   MovementType,
@@ -24,3 +25,9 @@ export const movementTypeMeta: Record<
     icon: "tune",
   },
 };
+
+export const paymentMethodMeta: Record<PaymentMethod, string> = {
+  money: "Dinheiro",
+  card: "Cartão",
+  pix: "PIX"
+}

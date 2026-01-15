@@ -17,20 +17,16 @@
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
-      create-label="REGISTRAR MOVIMENTAÇÃO"
+      :can-edit="false"
+      :can-delete="false"
+      create-label="AJUSTAR ESTOQUE"
       @create="openModalCreate"
-      @edit="openModalEdit"
-      @delete="deleteMovement"
       @update:page="handlePageChange"
       @update:limit="handleLimitChange"
     />
 
     <CrudModal v-model="modalValue" :title="modalTitle">
-      <FeatureInventoryMovementForm
-        :movement="selectedMovement"
-        @save="saveMovement"
-        @cancel="closeModal"
-      />
+      <FeatureAdjustMovementForm @save="createMovement" @cancel="closeModal" />
     </CrudModal>
   </div>
 </template>
@@ -50,9 +46,6 @@ definePageMeta({
 });
 
 const columns = [
-  { key: "id", label: "ID" },
-  { key: "date_movement", label: "Data" },
-  { key: "product.name", label: "Produto" },
   {
     key: "type",
     label: "Tipo",
@@ -66,6 +59,20 @@ const columns = [
       };
     },
   },
+  { key: "id", label: "ID" },
+  {
+    key: "createdAt",
+    label: "Data",
+    formatter: (value: string | Date) => {
+      if (!value) return "-";
+
+      return new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(new Date(value));
+    },
+  },
+  { key: "product.name", label: "Produto" },
   { key: "quantity", label: "Quantidade" },
   { key: "observation", label: "Observação" },
 ];
@@ -79,14 +86,12 @@ const selectedMovement = ref<InventoryMovement | undefined>(undefined);
 
 const movements = computed(() => data.value || []);
 const modalTitle = computed(() => {
-  return selectedMovement.value
-    ? "EDITAR MOVIMENTAÇÃO"
-    : "REGISTRAR MOVIMENTAÇÃO";
+  return "AJUSTAR ESTOQUE";
 });
 
 const { data, pending, refresh, error, feedback, total } = await useAPI<
   InventoryMovement[]
->("/inventory-movements", {
+>("/inventory-movements", { //IMPLEMENTAR ORDENAÇÃO PELA API
   query: {
     page: currentPage,
     limit: itemsPerPage,
@@ -104,11 +109,6 @@ function handleLimitChange(limit: number) {
 }
 
 // Funções de CRUD
-async function saveMovement(movementData: InventoryMovementForm) {
-  feedback.clear();
-  if (selectedMovement.value) await editMovement(movementData);
-  else await createMovement(movementData);
-}
 async function createMovement(movementData: InventoryMovementForm) {
   const { error } = await useAPI<InventoryMovement>("/inventory-movements", {
     method: "POST",
@@ -131,60 +131,10 @@ async function createMovement(movementData: InventoryMovementForm) {
     closeModal();
   }
 }
-async function editMovement(movementData: InventoryMovementForm) {
-  const { error } = await useAPI<InventoryMovement>(
-    `/inventory-movements/${movementData.id}`,
-    {
-      method: "PATCH",
-      body: movementData,
-    }
-  );
-
-  if (error.value) {
-    if (error.value.statusCode === 409) {
-      feedback.show(
-        "Erro: uma movimentação com esses dados já existe!",
-        "error"
-      );
-    }
-    if (error.value.statusCode === 400) {
-      feedback.show("Erro: dados inválidos!", "error");
-    }
-  } else {
-    feedback.show(`Movimentação atualizada com sucesso!`, "success");
-    await refresh();
-    closeModal();
-  }
-}
-async function deleteMovement(movementData: InventoryMovementForm) {
-  feedback.clear();
-  if (!confirm("Deseja realmente excluir esta movimentação?")) return;
-
-  const { error } = await useAPI(`/inventory-movements/${movementData.id}`, {
-    method: "DELETE",
-  });
-
-  if (error.value) {
-    if (error.value.statusCode === 404) {
-      feedback.show(
-        `Erro: A Movimentação não existe ou já foi removida!`,
-        "error"
-      );
-    }
-  } else {
-    feedback.show(`Movimentação removida com sucesso!`, "success");
-    await refresh();
-    closeModal();
-  }
-}
 
 // Funções do Modal
 function openModalCreate() {
   selectedMovement.value = undefined;
-  modalValue.value = true;
-}
-function openModalEdit(movement: InventoryMovement) {
-  selectedMovement.value = { ...movement };
   modalValue.value = true;
 }
 function closeModal() {

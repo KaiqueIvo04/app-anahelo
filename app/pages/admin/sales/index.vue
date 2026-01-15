@@ -10,10 +10,10 @@
     :type="feedback.type.value"
   />
 
-  <div class="w-full mt-6 border border-base-300 bg-base-100">
+  <div class="w-full mt-6 overscroll-x-auto border border-base-300 bg-base-100">
     <CrudTable
       create-label="REGISTRAR VENDA"
-      :rows="movements"
+      :rows="sales"
       :columns="columns"
       :page="currentPage"
       :limit="itemsPerPage"
@@ -27,44 +27,54 @@
     />
   </div>
   <CrudModal v-model="modalValue" :title="modalTitle">
-    <FeatureSellMovementForm @save="saveMovement" @cancel="closeModal" />
+    <FeatureSellSaleForm @save="saveSale" @cancel="closeModal" />
   </CrudModal>
 </template>
 
 <script setup lang="ts">
-import type { MovementType } from "~/types/enums/movement_type";
-import type {
-  InventoryMovement,
-  InventoryMovementForm,
-} from "~/types/interfaces/inventory_movements";
-import type { SaleForm } from "~/types/interfaces/sale";
-
-import { movementTypeMeta } from "~/utils/metas";
+import type { PaymentMethod } from "~/types/enums/payment_method";
+import type { Column } from "~/types/interfaces/column";
+import type { Sale, SaleForm } from "~/types/interfaces/sale";
 
 definePageMeta({
   layout: "private",
   middleware: "auth",
 });
 
-const columns = [
-  { key: "id", label: "ID" },
-  { key: "date_movement", label: "Data" },
-  { key: "product.name", label: "Produto" },
+const columns: Column[] = [
   {
-    key: "type",
+    key: "uiType",
     label: "Tipo",
-    formatter: (value: MovementType) => {
-      const meta = movementTypeMeta[value];
+    formatter: () => ({
+      label: "Saída",
+      class: "badge badge-error", // vermelho, saída
+      icon: "arrow_upward",
+    }),
+  },
+  { key: "id", label: "ID" },
+  {
+    key: "date_sale",
+    label: "Data",
+    formatter: (value: string | Date) => {
+      if (!value) return "-";
 
-      return {
-        label: meta.label,
-        class: meta.badge,
-        icon: meta.icon,
-      };
+      return new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(new Date(value));
     },
   },
-  { key: "quantity", label: "Quantidade" },
-  { key: "observation", label: "Observação" },
+  { key: "name_client", label: "Cliente" },
+  {
+    key: "payment_method",
+    label: "Pagamento",
+    formatter: (value: PaymentMethod) => paymentMethodMeta[value],
+  },
+  {
+    key: "total_value",
+    label: "Total",
+    formatter: (value: number) => `R$${value}`,
+  },
 ];
 
 // Estado da paginação
@@ -72,25 +82,23 @@ const currentPage = ref(1);
 const itemsPerPage = ref(10);
 
 const modalValue = ref(false);
-const selectedMovement = ref<InventoryMovement | undefined>(undefined);
+const selectedSale = ref<Sale | undefined>(undefined);
 
-const movements = computed(() => data.value || []);
+const sales = computed(() => data.value || []);
 const modalTitle = computed(() => {
-  return selectedMovement.value
-    ? "EDITAR VENDA"
-    : "REGISTRAR VENDA";
+  return selectedSale.value ? "EDITAR VENDA" : "REGISTRAR VENDA";
 });
 
-const filter: string = `filter={"type":"sell"}`;
-const { data, pending, refresh, error, feedback, total } = await useAPI<
-  InventoryMovement[]
->(`/inventory-movements?${filter}`, {
-  query: {
-    page: currentPage,
-    limit: itemsPerPage,
-  },
-  watch: [currentPage, itemsPerPage],
-});
+const { data, pending, refresh, error, feedback, total } = await useAPI<Sale[]>(
+  `/sales`,
+  {
+    query: {
+      page: currentPage,
+      limit: itemsPerPage,
+    },
+    watch: [currentPage, itemsPerPage],
+  }
+);
 
 // Handlers de paginação
 function handlePageChange(page: number) {
@@ -102,11 +110,11 @@ function handleLimitChange(limit: number) {
 }
 
 // Funções de CRUD
-async function saveMovement(movementData: SaleForm) {
+async function saveSale(saleData: SaleForm) {
   feedback.clear();
-  const { error } = await useAPI<InventoryMovement>("/sales", {
+  const { error } = await useAPI<Sale>("/sales", {
     method: "POST",
-    body: movementData,
+    body: saleData,
   });
 
   if (error.value) {
@@ -126,36 +134,13 @@ async function saveMovement(movementData: SaleForm) {
   }
 }
 
-// }
-// async function deleteMovement(movementData: SaleForm) {
-//   feedback.clear();
-//   if (!confirm("Deseja realmente excluir esta movimentação?")) return;
-
-//   const { error } = await useAPI(`/inventory-movements/${movementData.id}`, {
-//     method: "DELETE",
-//   });
-
-//   if (error.value) {
-//     if (error.value.statusCode === 404) {
-//       feedback.show(
-//         `Erro: A Movimentação não existe ou já foi removida!`,
-//         "error"
-//       );
-//     }
-//   } else {
-//     feedback.show(`Movimentação removida com sucesso!`, "success");
-//     await refresh();
-//     closeModal();
-//   }
-// }
-
 // Funções do Modal
 function openModalCreate() {
-  selectedMovement.value = undefined;
+  selectedSale.value = undefined;
   modalValue.value = true;
 }
 function closeModal() {
   modalValue.value = false;
-  selectedMovement.value = undefined;
+  selectedSale.value = undefined;
 }
 </script>

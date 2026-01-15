@@ -1,4 +1,8 @@
 <template>
+  <UiFeedBackAlert
+    :message="feedback.message.value"
+    :type="feedback.type.value"
+  />
   <form @submit.prevent="saveProduct" class="space-y-4">
     <div class="form-control">
       <fieldset class="fieldset">
@@ -143,18 +147,6 @@
       <button
         v-if="disabled"
         type="button"
-        @click="
-          () => {
-            disabled = false;
-          }
-        "
-        class="btn btn-accent"
-      >
-        Editar
-      </button>
-      <button
-        v-if="disabled"
-        type="button"
         @click="$emit('remove', props.product!)"
         class="btn btn-error"
       >
@@ -197,6 +189,7 @@ const feedback = useFeedback();
 const { data: suppliers, error } = await useAPI<Supplier[]>("/suppliers");
 
 if (error.value) {
+  feedback.clear();
   feedback.show("Erro ao obter fornecedores!", "error");
 }
 
@@ -210,11 +203,13 @@ function handleFileChange(event: Event) {
   const maxSize = 4 * 1024 * 1024; // 4MB
 
   if (file.size > maxSize) {
+    feedback.clear();
     feedback.show("A imagem deve ter no máximo 4MB", "error");
     return;
   }
 
   if (!file.type.startsWith("image/")) {
+    feedback.clear();
     feedback.show("Arquivo inválido. Envie uma imagem.", "error");
     return;
   }
@@ -272,9 +267,7 @@ function saveProduct() {
 }
 
 function deleteProduct() {
-  const dados: ProductForm = {
-    
-  }
+  const dados: ProductForm = {};
 }
 
 function cancel() {

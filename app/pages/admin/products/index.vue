@@ -116,7 +116,7 @@ const { data, pending, refresh, error, feedback, total } = await useAPI<
   watch: [currentPage, itemsPerPage],
 });
 
-// 👇 Produtos ordenados (client-side)
+// Produtos ordenados (client-side)
 const sortedProducts = computed(() => {
   const products = data.value || [];
 

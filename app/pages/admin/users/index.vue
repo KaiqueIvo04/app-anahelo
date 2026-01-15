@@ -38,9 +38,10 @@
 </template>
 
 <script setup lang="ts">
+import type { Column } from "~/types/interfaces/column";
 import type { User, UserForm } from "~/types/interfaces/user";
 
-const columns = [
+const columns: Column[] = [
   { key: "id", label: "ID" },
   { key: "name", label: "Nome" },
   { key: "email", label: "E-mail" },
