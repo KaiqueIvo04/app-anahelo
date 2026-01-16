@@ -22,7 +22,6 @@
 
 <script setup lang="ts">
 const cards = [
-  { icon: "group", label: "Usuários", to: "/admin/users" },
   {
     icon: "add",
     label: "Compras",
@@ -40,6 +39,7 @@ const cards = [
   },
   { icon: "inventory", label: "Produtos", to: "/admin/products" },
   { icon: "warehouse", label: "Fornecedores", to: "/admin/suppliers" },
+  { icon: "groups_2", label: "Usuários", to: "/admin/users" },
   { icon: "person", label: "Minha conta", to: "/admin/myaccount" },
 ];
 

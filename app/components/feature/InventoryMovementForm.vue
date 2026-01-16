@@ -65,14 +65,14 @@
     </div>
 
     <!-- Data -->
-    <div class="form-control">
+    <div v-if="movementType !== MovementType.ADJUST" class="form-control">
       <label class="label">
         <span class="label-text">Data{{ movement ? "" : "*" }}</span>
       </label>
 
       <input
         v-model="form.date_movement"
-        type="date"
+        type="datetime-local"
         :disabled="disabled"
         class="input input-bordered validator w-full"
         :required="!movement"
@@ -82,15 +82,21 @@
     <!-- Observação -->
     <div class="form-control">
       <label class="label">
-        <span class="label-text">Observação</span>
+        <span class="label-text"
+          >Observação
+          {{ movementType === MovementType.ADJUST ? "*" : undefined }}</span
+        >
       </label>
 
       <textarea
         v-model="form.observation"
         :disabled="disabled"
-        class="textarea textarea-bordered w-full"
+        class="textarea textarea-bordered validator w-full"
         maxlength="255"
+        :required="movementType === MovementType.ADJUST"
       />
+
+      <p class="validator-hint">Observação é obrigatória para ajustes</p>
     </div>
 
     <!-- Dados da Venda -->
@@ -215,7 +221,8 @@ const form = reactive<
   product_id: undefined,
   type: props.movementType ?? props.movement?.type,
   quantity: undefined,
-  date_movement: "",
+  date_movement: props.movementType === MovementType.ADJUST ? undefined : "",
+
   observation: "",
 
   // Campos de venda

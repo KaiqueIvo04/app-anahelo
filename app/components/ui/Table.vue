@@ -6,14 +6,14 @@
         <th
           v-for="col in columns"
           :key="col.key"
-          class="cursor-pointer"
-          @click="sortColumn(col)"
+          :class="col.sortable ? 'cursor-pointer' : 'cursor-default'"
+          @click="col.sortable && sortColumn(col)"
         >
           <div class="flex items-center gap-1 max-w-60">
             {{ col.label }}
 
             <!-- Indicador de ordenação -->
-            <span v-if="sort.key === col.key">
+            <span v-if="sort.key === col.key && col.sortable">
               <span v-if="sort.direction === 'asc'">▲</span>
               <span v-else>▼</span>
             </span>
@@ -21,19 +21,20 @@
         </th>
 
         <!-- Ações -->
-        <th v-if="$slots.actions || showDefaultActions">Ações</th>
+        <th v-if="$slots.actions || showDefaultActions" class="text-center">Ações</th>
       </tr>
     </thead>
 
     <!-- Corpo -->
     <tbody>
       <tr
-        v-for="row in sortedRows"
+        v-for="row in rows"
         :key="rowKey(row)"
         :class="[
           'hover:bg-secondary/25',
           isRowDisabled(row) ? 'opacity-60' : '',
         ]"
+        @click="showInformations(row)"
       >
         <!-- CONTEÚDO PRINCIPAL -->
         <td v-for="col in columns" :key="col.key">
@@ -72,7 +73,7 @@
         <td v-if="$slots.actions || showDefaultActions">
           <slot name="actions" :row="row" :disabled="isRowDisabled(row)">
             <!-- Ações padrão se não houver slot customizado -->
-            <div class="flex gap-2" v-if="showDefaultActions">
+            <div class="flex justify-center gap-2" v-if="showDefaultActions">
               <button
                 v-if="!hideEdit"
                 @click="$emit('edit', row)"
@@ -119,7 +120,7 @@
         </td>
       </tr>
 
-      <tr v-if="!loading && sortedRows.length === 0">
+      <tr v-if="!loading && rows.length === 0">
         <td
           :colspan="
             columns.length + ($slots.actions || showDefaultActions ? 1 : 0)
@@ -156,10 +157,16 @@ const props = defineProps<{
   disableRow?: (row: any) => boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   edit: [row: any];
+  showInfo: [row: any];
   delete: [row: any];
+  "update:sort": [sort: any];
 }>();
+
+function showInformations(row: any) {
+  emit('showInfo', row);
+}
 
 // Caso a key do objeto não seja passada
 const rowKey = props.rowKey ?? ((row) => row.id ?? JSON.stringify(row));
@@ -198,19 +205,7 @@ function sortColumn(col: Column) {
     sort.key = col.key;
     sort.direction = "asc";
   }
+
+  emit('update:sort', sort)
 }
-
-const sortedRows = computed(() => {
-  if (!sort.key) return props.rows;
-
-  return [...props.rows].sort((a, b) => {
-    const x = a[sort.key];
-    const y = b[sort.key];
-
-    if (x == null) return 1;
-    if (y == null) return -1;
-
-    return sort.direction === "asc" ? (x > y ? 1 : -1) : x < y ? 1 : -1;
-  });
-});
 </script>

@@ -15,19 +15,32 @@
       create-label="REGISTRAR VENDA"
       :rows="sales"
       :columns="columns"
+      :loading="pending"
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
       :canEdit="false"
       :canDelete="false"
       :showDefaultActions="false"
+      @show-info="openModalRead"
       @create="openModalCreate"
       @update:page="handlePageChange"
       @update:limit="handleLimitChange"
+      @update:sort="
+        (sort) => {
+          sortBy = sort.key;
+          sortOrder = sort.direction;
+        }
+      "
     />
   </div>
   <CrudModal v-model="modalValue" :title="modalTitle">
-    <FeatureSellSaleForm @save="saveSale" @cancel="closeModal" />
+    <FeatureSellMovementForm
+      v-if="!selectedSale"
+      @save="saveSale"
+      @cancel="closeModal"
+    />
+    <FeatureSaleDetail v-if="selectedSale" :sale="selectedSale" />
   </CrudModal>
 </template>
 
@@ -45,41 +58,52 @@ const columns: Column[] = [
   {
     key: "uiType",
     label: "Tipo",
+    sortable: false,
     formatter: () => ({
       label: "Saída",
       class: "badge badge-error", // vermelho, saída
       icon: "arrow_upward",
     }),
   },
-  { key: "id", label: "ID" },
+  { key: "id", label: "ID", sortable: false },
   {
-    key: "date_sale",
-    label: "Data",
-    formatter: (value: string | Date) => {
-      if (!value) return "-";
-
-      return new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(new Date(value));
-    },
+    key: "createdAt",
+    label: "Registrado em",
+    sortable: true,
+    formatter: dateFormatter,
   },
-  { key: "name_client", label: "Cliente" },
+  { key: "name_client", label: "Cliente", sortable: true },
   {
     key: "payment_method",
     label: "Pagamento",
+    sortable: true,
     formatter: (value: PaymentMethod) => paymentMethodMeta[value],
   },
   {
     key: "total_value",
     label: "Total",
+    sortable: true,
     formatter: (value: number) => `R$${value}`,
+  },
+  {
+    key: "discount",
+    label: "Desconto",
+    sortable: true,
+    formatter: (value: number) => `R$${value}`,
+  },
+  {
+    key: "date_sale",
+    label: "Data da venda",
+    sortable: true,
+    formatter: dateFormatter,
   },
 ];
 
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+const sortBy = ref("createdAt");
+const sortOrder = ref<"asc" | "desc">("desc");
 
 const modalValue = ref(false);
 const selectedSale = ref<Sale | undefined>(undefined);
@@ -88,15 +112,20 @@ const sales = computed(() => data.value || []);
 const modalTitle = computed(() => {
   return selectedSale.value ? "EDITAR VENDA" : "REGISTRAR VENDA";
 });
+const query = computed(() => ({
+  page: currentPage.value,
+  limit: itemsPerPage.value,
+  sort: {
+    by: sortBy.value,
+    order: sortOrder.value,
+  },
+}));
 
-const { data, pending, refresh, error, feedback, total } = await useAPI<Sale[]>(
+const { data, pending, refresh, feedback, total } = await useAPI<Sale[]>(
   `/sales`,
   {
-    query: {
-      page: currentPage,
-      limit: itemsPerPage,
-    },
-    watch: [currentPage, itemsPerPage],
+    query,
+    watch: [query],
   }
 );
 
@@ -124,8 +153,14 @@ async function saveSale(saleData: SaleForm) {
         "error"
       );
     }
-    if (error.value.statusCode === 400) {
-      feedback.show("Erro: dados inválidos!", "error");
+    if (
+      error.value.statusCode === 400 &&
+      error.value.data.message.includes("Insufficient stock")
+    ) {
+      feedback.show(
+        "Erro: o produto não possui estoque suficiente para esta venda!",
+        "error"
+      );
     }
   } else {
     feedback.show(`Movimentação registrada com sucesso!`, "success");
@@ -137,6 +172,10 @@ async function saveSale(saleData: SaleForm) {
 // Funções do Modal
 function openModalCreate() {
   selectedSale.value = undefined;
+  modalValue.value = true;
+}
+function openModalRead(sale: Sale) {
+  selectedSale.value = { ...sale };
   modalValue.value = true;
 }
 function closeModal() {

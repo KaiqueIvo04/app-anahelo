@@ -15,24 +15,34 @@
       create-label="REGISTRAR COMPRA"
       :rows="movements"
       :columns="columns"
+      :loading="pending"
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
       :canEdit="false"
       :canDelete="false"
       :showDefaultActions="false"
+      @show-info="openModalRead"
       @create="openModalCreate"
       @update:page="handlePageChange"
       @update:limit="handleLimitChange"
+      @update:sort="
+        (sort) => {
+          sortBy = sort.key;
+          sortOrder = sort.direction;
+        }
+      "
     />
   </div>
   <CrudModal v-model="modalValue" :title="modalTitle">
-    <FeatureBuyMovementForm @save="saveMovement" @cancel="closeModal" />
+    <FeatureBuyMovementForm v-if="!selectedMovement" @save="createMovement" @cancel="closeModal" />
+    <FeatureInventoryMovementDetail v-if="selectedMovement" :movement="selectedMovement" />
   </CrudModal>
 </template>
 
 <script setup lang="ts">
 import type { MovementType } from "~/types/enums/movement_type";
+import type { Column } from "~/types/interfaces/column";
 import type {
   InventoryMovement,
   InventoryMovementForm,
@@ -45,10 +55,11 @@ definePageMeta({
   middleware: "auth",
 });
 
-const columns = [
+const columns: Column[] = [
   {
     key: "type",
     label: "Tipo",
+    sortable: false,
     formatter: (value: MovementType) => {
       const meta = movementTypeMeta[value];
 
@@ -59,27 +70,29 @@ const columns = [
       };
     },
   },
-  { key: "id", label: "ID" },
+  { key: "id", label: "ID", sortable: true },
+  {
+    key: "createdAt",
+    label: "Registrado em",
+    sortable: true,
+    formatter: dateFormatter,
+  },
+  { key: "product.name", label: "Produto", sortable: true },
+  { key: "quantity", label: "Quantidade", sortable: true },
+  { key: "observation", label: "Observação", sortable: false },
   {
     key: "date_movement",
-    label: "Data",
-    formatter: (value: string | Date) => {
-      if (!value) return "-";
-
-      return new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(new Date(value));
-    },
+    label: "Data da compra",
+    sortable: true,
+    formatter: dateFormatter,
   },
-  { key: "product.name", label: "Produto" },
-  { key: "quantity", label: "Quantidade" },
-  { key: "observation", label: "Observação" },
 ];
 
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+const sortBy = ref("createdAt");
+const sortOrder = ref<"asc" | "desc">("desc");
 
 const modalValue = ref(false);
 const selectedMovement = ref<InventoryMovement | undefined>(undefined);
@@ -90,16 +103,21 @@ const modalTitle = computed(() => {
     ? "EDITAR MOVIMENTAÇÃO"
     : "REGISTRAR MOVIMENTAÇÃO";
 });
+const query = computed(() => ({
+  page: currentPage.value,
+  limit: itemsPerPage.value,
+  sort: {
+    by: sortBy.value,
+    order: sortOrder.value,
+  },
+}));
 
 const filter: string = `filter={"type":"buy"}`;
 const { data, pending, refresh, error, feedback, total } = await useAPI<
   InventoryMovement[]
 >(`/inventory-movements?${filter}`, {
-  query: {
-    page: currentPage,
-    limit: itemsPerPage,
-  },
-  watch: [currentPage, itemsPerPage],
+  query,
+  watch: [query],
 });
 
 // Handlers de paginação
@@ -112,12 +130,8 @@ function handleLimitChange(limit: number) {
 }
 
 // Funções de CRUD
-async function saveMovement(movementData: InventoryMovementForm) {
-  feedback.clear();
-  if (selectedMovement.value) await editMovement(movementData);
-  else await createMovement(movementData);
-}
 async function createMovement(movementData: InventoryMovementForm) {
+  feedback.clear();
   const { error } = await useAPI<InventoryMovement>("/inventory-movements", {
     method: "POST",
     body: movementData,
@@ -139,60 +153,14 @@ async function createMovement(movementData: InventoryMovementForm) {
     closeModal();
   }
 }
-async function editMovement(movementData: InventoryMovementForm) {
-  const { error } = await useAPI<InventoryMovement>(
-    `/inventory-movements/${movementData.id}`,
-    {
-      method: "PATCH",
-      body: movementData,
-    }
-  );
-
-  if (error.value) {
-    if (error.value.statusCode === 409) {
-      feedback.show(
-        "Erro: uma movimentação com esses dados já existe!",
-        "error"
-      );
-    }
-    if (error.value.statusCode === 400) {
-      feedback.show("Erro: dados inválidos!", "error");
-    }
-  } else {
-    feedback.show(`Movimentação atualizada com sucesso!`, "success");
-    await refresh();
-    closeModal();
-  }
-}
-async function deleteMovement(movementData: InventoryMovementForm) {
-  feedback.clear();
-  if (!confirm("Deseja realmente excluir esta movimentação?")) return;
-
-  const { error } = await useAPI(`/inventory-movements/${movementData.id}`, {
-    method: "DELETE",
-  });
-
-  if (error.value) {
-    if (error.value.statusCode === 404) {
-      feedback.show(
-        `Erro: A Movimentação não existe ou já foi removida!`,
-        "error"
-      );
-    }
-  } else {
-    feedback.show(`Movimentação removida com sucesso!`, "success");
-    await refresh();
-    closeModal();
-  }
-}
 
 // Funções do Modal
 function openModalCreate() {
   selectedMovement.value = undefined;
   modalValue.value = true;
 }
-function openModalEdit(movement: InventoryMovement) {
-  selectedMovement.value = { ...movement };
+function openModalRead(movement: InventoryMovement) {
+  selectedMovement.value = {...movement};
   modalValue.value = true;
 }
 function closeModal() {

@@ -5,6 +5,7 @@ export interface SaleItemForm {
   product_id: string;
   quantity: number;
   unit_price: number;
+  product_name_snapshot: string;
 }
 
 export interface SaleForm {
@@ -21,7 +22,7 @@ export interface Sale {
   total_value: number;
   payment_method: PaymentMethod;
   name_client: string;
-  discount?: number;
+  discount: number;
   createdAt: string
   updatedAt: string
 }

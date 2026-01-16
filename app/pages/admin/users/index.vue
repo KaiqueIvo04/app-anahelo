@@ -25,6 +25,12 @@
       @delete="deleteUser"
       @update:page="handlePageChange"
       @update:limit="handleLimitChange"
+      @update:sort="
+        (sort) => {
+          sortBy = sort.key;
+          sortOrder = sort.direction;
+        }
+      "
     />
 
     <CrudModal v-model="modalValue" :title="modalTitle">
@@ -42,10 +48,16 @@ import type { Column } from "~/types/interfaces/column";
 import type { User, UserForm } from "~/types/interfaces/user";
 
 const columns: Column[] = [
-  { key: "id", label: "ID" },
-  { key: "name", label: "Nome" },
-  { key: "email", label: "E-mail" },
-  { key: "type", label: "Tipo" },
+  {
+    key: "createdAt",
+    label: "Registrado em",
+    sortable: true,
+    formatter: dateFormatter,
+  },
+  { key: "id", label: "ID", sortable: false },
+  { key: "name", label: "Nome", sortable: true },
+  { key: "email", label: "E-mail", sortable: true },
+  { key: "type", label: "Tipo", sortable: true },
 ];
 
 definePageMeta({
@@ -58,6 +70,8 @@ const loggedUserStore = useLoggedUserStore();
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+const sortBy = ref("createdAt");
+const sortOrder = ref<"asc" | "desc">("desc");
 
 const modalValue = ref(false);
 const selectedUser = ref<User | undefined>(undefined);
@@ -68,15 +82,20 @@ const modalTitle = computed(() => {
   return selectedUser.value ? "EDITAR USUÁRIO" : "REGISTRAR USUÁRIO";
 });
 const users = computed(() => data.value || []);
+const query = computed(() => ({
+  page: currentPage.value,
+  limit: itemsPerPage.value,
+  sort: {
+    by: sortBy.value,
+    order: sortOrder.value,
+  },
+}));
 
 const { data, pending, refresh, error, feedback, total } = await useAPI<User[]>(
   "/users",
   {
-    query: {
-      page: currentPage,
-      limit: itemsPerPage,
-    },
-    watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
+    query,
+    watch: [query],
   }
 );
 

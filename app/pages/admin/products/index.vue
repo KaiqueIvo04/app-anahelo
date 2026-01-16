@@ -35,12 +35,12 @@
       @update:sort="handleSortChange"
     >
       <UiBaseCard
-        v-for="product in sortedProducts"
+        v-for="product in data"
         :key="product.id"
         :id="product.id"
         :title="product.name"
         :description="product.description"
-        @click="openModalEdit(product)"
+        @click="openModalRead(product)"
         class="cursor-pointer"
       >
         <template #header>
@@ -59,15 +59,21 @@
           </div>
         </template>
 
-        <div class="w-full badge badge-outline mb-2"><strong>Em estoque:</strong> {{ product.inventory_quantity }}</div>
+        <div class="w-full badge badge-outline mb-2">
+          <strong>Em estoque:</strong> {{ product.inventory_quantity }}
+        </div>
         <div class="w-full flex gap-2">
-          <div class="w-1/2 h-12 text-xs badge badge-warning"><strong> ▼ Preço de compra:</strong> R${{ product.cost }}</div>
-          <div class="w-1/2 h-12 text-xs badge badge-success"><strong> ▲ Preço de venda:</strong> R${{ product.price }}</div>
+          <div class="w-1/2 h-12 text-xs badge badge-warning">
+            <strong> ▼ Preço de compra:</strong> R${{ product.cost }}
+          </div>
+          <div class="w-1/2 h-12 text-xs badge badge-success">
+            <strong> ▲ Preço de venda:</strong> R${{ product.price }}
+          </div>
         </div>
       </UiBaseCard>
     </CrudCardGrid>
     <div
-      v-if="sortedProducts.length === 0"
+      v-if="!data || data.length === 0"
       class="text-center p-6 my-20 opacity-70"
     >
       Nenhum registro encontrado
@@ -88,7 +94,7 @@ const currentPage = ref(1);
 const itemsPerPage = ref(8);
 
 // Estado da ordenação
-const sortBy = ref("name");
+const sortBy = ref("createdAt");
 const sortOrder = ref<"asc" | "desc">("asc");
 
 // Opções de ordenação disponíveis
@@ -100,6 +106,15 @@ const sortOptions = [
   { value: "id", label: "ID" },
 ];
 
+const query = computed(() => ({
+  page: currentPage.value,
+  limit: itemsPerPage.value,
+  sort: {
+    by: sortBy.value,
+    order: sortOrder.value,
+  },
+}));
+
 const modalValue = ref(false);
 const selectedProduct = ref<Product | undefined>(undefined);
 const modalTitle = computed(() => {
@@ -109,52 +124,14 @@ const modalTitle = computed(() => {
 const { data, pending, refresh, error, feedback, total } = await useAPI<
   Product[]
 >("/products", {
-  query: {
-    page: currentPage,
-    limit: itemsPerPage,
-  },
-  watch: [currentPage, itemsPerPage],
-});
-
-// Produtos ordenados (client-side)
-const sortedProducts = computed(() => {
-  const products = data.value || [];
-
-  // Cria uma cópia para não modificar o array original
-  const sorted = [...products];
-
-  sorted.sort((a, b) => {
-    const aValue = a[sortBy.value as keyof Product];
-    const bValue = b[sortBy.value as keyof Product];
-
-    // Trata valores undefined/null
-    if (aValue == null) return 1;
-    if (bValue == null) return -1;
-
-    // Comparação para números
-    if (typeof aValue === "number" && typeof bValue === "number") {
-      return sortOrder.value === "asc" ? aValue - bValue : bValue - aValue;
-    }
-
-    // Comparação para strings
-    const aStr = String(aValue).toLowerCase();
-    const bStr = String(bValue).toLowerCase();
-
-    if (sortOrder.value === "asc") {
-      return aStr.localeCompare(bStr);
-    } else {
-      return bStr.localeCompare(aStr);
-    }
-  });
-
-  return sorted;
+  query,
+  watch: [query],
 });
 
 // Handlers de paginação
 function handlePageChange(page: number) {
   currentPage.value = page;
 }
-
 function handleLimitChange(limit: number) {
   itemsPerPage.value = limit;
   currentPage.value = 1;
@@ -166,11 +143,11 @@ function handleSortChange(newSortBy: string, newSortOrder: "asc" | "desc") {
   sortOrder.value = newSortOrder;
 }
 
+// FUNÇÕES DE CRUD
 async function saveProduct(productData: ProductForm) {
   if (selectedProduct.value) await editProduct(productData);
   else await createProduct(productData);
 }
-
 async function createProduct(productData: ProductForm) {
   const { error } = await useAPI<Product>("/products", {
     method: "POST",
@@ -188,7 +165,6 @@ async function createProduct(productData: ProductForm) {
     closeModal();
   }
 }
-
 async function editProduct(productData: ProductForm) {
   const { error } = await useAPI<Product>(`/products/${productData.id}`, {
     method: "PATCH",
@@ -206,7 +182,6 @@ async function editProduct(productData: ProductForm) {
     closeModal();
   }
 }
-
 async function deleteProduct(productData: ProductForm) {
   if (!confirm("Deseja realmente excluir este produto?")) return;
 
@@ -223,16 +198,16 @@ async function deleteProduct(productData: ProductForm) {
   }
 }
 
+
+// FUNÇÕES DO MODAL
 function openModalCreate() {
   selectedProduct.value = undefined;
   modalValue.value = true;
 }
-
-function openModalEdit(product: Product) {
+function openModalRead(product: Product) {
   selectedProduct.value = { ...product };
   modalValue.value = true;
 }
-
 function closeModal() {
   modalValue.value = false;
   selectedProduct.value = undefined;

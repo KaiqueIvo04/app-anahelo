@@ -25,6 +25,12 @@
       @delete="deleteSupplier"
       @update:page="handlePageChange"
       @update:limit="handleLimitChange"
+      @update:sort="
+        (sort) => {
+          sortBy = sort.key;
+          sortOrder = sort.direction;
+        }
+      "
     />
 
     <CrudModal v-model="modalValue" :title="modalTitle">
@@ -38,15 +44,22 @@
 </template>
 
 <script setup lang="ts">
+import type { Column } from "~/types/interfaces/column";
 import type { Supplier, SupplierForm } from "~/types/interfaces/supplier";
 
-const columns = [
-  { key: "id", label: "ID" },
-  { key: "name", label: "Nome" },
-  { key: "cnpj", label: "CNPJ" },
-  { key: "phone", label: "Contato" },
-  { key: "email", label: "E-mail" },
-  { key: "address", label: "Endereço" },
+const columns: Column[] = [
+  {
+    key: "createdAt",
+    label: "Registrado em",
+    sortable: true,
+    formatter: dateFormatter,
+  },
+  { key: "id", label: "ID", sortable: false },
+  { key: "name", label: "Nome", sortable: true },
+  { key: "cnpj", label: "CNPJ", sortable: true },
+  { key: "phone", label: "Contato", sortable: true },
+  { key: "email", label: "E-mail", sortable: true },
+  { key: "address", label: "Endereço", sortable: true },
 ];
 
 definePageMeta({
@@ -57,6 +70,8 @@ definePageMeta({
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+const sortBy = ref("createdAt");
+const sortOrder = ref<"asc" | "desc">("desc");
 
 const modalValue = ref(false);
 const selectedSupplier = ref<Supplier | undefined>(undefined);
@@ -65,15 +80,20 @@ const modalTitle = computed(() => {
   return selectedSupplier.value ? "EDITAR FORNECEDOR" : "REGISTRAR FORNECEDOR";
 });
 const suppliers = computed(() => data.value || []);
+const query = computed(() => ({
+  page: currentPage.value,
+  limit: itemsPerPage.value,
+  sort: {
+    by: sortBy.value,
+    order: sortOrder.value,
+  },
+}));
 
 const { data, pending, refresh, error, feedback, total } = await useAPI<
   Supplier[]
 >("/suppliers", {
-  query: {
-    page: currentPage,
-    limit: itemsPerPage,
-  },
-  watch: [currentPage, itemsPerPage], // Refaz a requisição quando mudar,
+  query,
+  watch: [query],
 });
 
 // Handlers de paginação

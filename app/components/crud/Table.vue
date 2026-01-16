@@ -7,15 +7,15 @@
         class="btn btn-primary"
         :title="'Registrar'"
       >
-        <span class="material-icons"> add </span>
+        <span class="material-icons"> {{ createIcon ? createIcon : 'add' }} </span>
         {{ createLabel }}
       </button>
 
       <!-- Seletor de itens por página -->
       <div class="flex items-center gap-2">
         <label class="text-sm">Itens:</label>
-        <select 
-          v-model="localLimit" 
+        <select
+          v-model="localLimit"
           class="select select-sm"
           @change="handleLimitChange"
         >
@@ -40,8 +40,10 @@
         :hide-delete="hideDelete || !canDelete"
         :edit-label="editLabel"
         :delete-label="deleteLabel"
-        @edit="row => $emit('edit', row)"
-        @delete="row => $emit('delete', row)"
+        @edit="(row) => $emit('edit', row)"
+        @show-info="(row) => $emit('showInfo', row)"
+        @delete="(row) => $emit('delete', row)"
+        @update:sort="(sort) => $emit('update:sort', sort)"
       >
         <template v-if="showDefaultActions" #actions="{ row }">
           <slot name="actions" :row="row" />
@@ -50,7 +52,10 @@
     </div>
 
     <!-- Paginação -->
-    <div v-if="totalPages > 1" class="flex justify-between items-center p-4 border-t">
+    <div
+      v-if="totalPages > 1"
+      class="flex justify-between items-center p-4 border-t"
+    >
       <!-- Informações da paginação -->
       <div class="text-sm text-gray-600">
         Mostrando {{ startItem }} a {{ endItem }} de {{ total }} itens
@@ -59,7 +64,7 @@
       <!-- Controles de paginação -->
       <div class="join">
         <!-- Botão primeira página -->
-        <button 
+        <button
           class="join-item btn btn-sm"
           :disabled="page === 1 || loading"
           @click="goToPage(1)"
@@ -69,7 +74,7 @@
         </button>
 
         <!-- Botão página anterior -->
-        <button 
+        <button
           class="join-item btn btn-sm"
           :disabled="page === 1 || loading"
           @click="goToPage(page - 1)"
@@ -89,17 +94,13 @@
           >
             {{ pageNum }}
           </button>
-          <button
-            v-else
-            class="join-item btn btn-sm btn-disabled"
-            disabled
-          >
+          <button v-else class="join-item btn btn-sm btn-disabled" disabled>
             ...
           </button>
         </template>
 
         <!-- Botão próxima página -->
-        <button 
+        <button
           class="join-item btn btn-sm"
           :disabled="page === totalPages || loading"
           @click="goToPage(page + 1)"
@@ -109,7 +110,7 @@
         </button>
 
         <!-- Botão última página -->
-        <button 
+        <button
           class="join-item btn btn-sm"
           :disabled="page === totalPages || loading"
           @click="goToPage(totalPages)"
@@ -145,13 +146,14 @@ interface Props {
 
   // Labels customizáveis
   createLabel?: string;
+  createIcon?: string;
   editLabel?: string;
   deleteLabel?: string;
 
   // Paginação server-side
-  page: number;        // Página atual
-  limit: number;       // Itens por página
-  total: number;       // Total de itens no servidor
+  page: number; // Página atual
+  limit: number; // Itens por página
+  total: number; // Total de itens no servidor
   maxVisiblePages?: number;
 }
 
@@ -169,18 +171,18 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   create: [];
   edit: [row: any];
+  showInfo: [row: any];
   delete: [row: any];
-  'update:page': [page: number];
-  'update:limit': [limit: number];
+  "update:sort": [sort: any];
+  "update:page": [page: number];
+  "update:limit": [limit: number];
 }>();
 
 // Estado local para v-model
 const localLimit = ref(props.limit);
 
 // Computados da paginação
-const totalPages = computed(() => 
-  Math.ceil(props.total / props.limit)
-);
+const totalPages = computed(() => Math.ceil(props.total / props.limit));
 
 const startItem = computed(() => {
   if (props.total === 0) return 0;
@@ -213,7 +215,7 @@ const visiblePages = computed(() => {
     pages.push(1);
 
     if (shouldShowLeftDots) {
-      pages.push('...');
+      pages.push("...");
     }
 
     for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
@@ -223,7 +225,7 @@ const visiblePages = computed(() => {
     }
 
     if (shouldShowRightDots) {
-      pages.push('...');
+      pages.push("...");
     }
 
     if (total > 1) {
@@ -237,17 +239,20 @@ const visiblePages = computed(() => {
 // Funções de navegação
 function goToPage(page: number) {
   if (page >= 1 && page <= totalPages.value && !props.loading) {
-    emit('update:page', page);
+    emit("update:page", page);
   }
 }
 
 function handleLimitChange() {
-  emit('update:limit', localLimit.value);
-  emit('update:page', 1); // Volta pra primeira página
+  emit("update:limit", localLimit.value);
+  emit("update:page", 1); // Volta pra primeira página
 }
 
 // Sincroniza localLimit com prop
-watch(() => props.limit, (newLimit) => {
-  localLimit.value = newLimit;
-});
+watch(
+  () => props.limit,
+  (newLimit) => {
+    localLimit.value = newLimit;
+  }
+);
 </script>

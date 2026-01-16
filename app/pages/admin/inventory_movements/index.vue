@@ -14,25 +14,44 @@
     <CrudTable
       :rows="movements"
       :columns="columns"
+      :loading="pending"
       :page="currentPage"
       :limit="itemsPerPage"
       :total="total"
+      :show-default-actions="false"
       :can-edit="false"
       :can-delete="false"
       create-label="AJUSTAR ESTOQUE"
+      create-icon="settings"
       @create="openModalCreate"
+      @show-info="openModalRead"
       @update:page="handlePageChange"
       @update:limit="handleLimitChange"
+      @update:sort="
+        (sort) => {
+          sortBy = sort.key;
+          sortOrder = sort.direction;
+        }
+      "
     />
 
     <CrudModal v-model="modalValue" :title="modalTitle">
-      <FeatureAdjustMovementForm @save="createMovement" @cancel="closeModal" />
+      <FeatureAdjustMovementForm
+        v-if="!selectedMovement"
+        @save="createMovement"
+        @cancel="closeModal"
+      />
+      <FeatureInventoryMovementDetail
+        v-if="selectedMovement"
+        :movement="selectedMovement"
+      />
     </CrudModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { MovementType } from "~/types/enums/movement_type";
+import type { Column } from "~/types/interfaces/column";
 import type {
   InventoryMovement,
   InventoryMovementForm,
@@ -45,10 +64,11 @@ definePageMeta({
   middleware: "auth",
 });
 
-const columns = [
+const columns: Column[] = [
   {
     key: "type",
     label: "Tipo",
+    sortable: false,
     formatter: (value: MovementType) => {
       const meta = movementTypeMeta[value];
 
@@ -62,41 +82,48 @@ const columns = [
   { key: "id", label: "ID" },
   {
     key: "createdAt",
-    label: "Data",
-    formatter: (value: string | Date) => {
-      if (!value) return "-";
-
-      return new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(new Date(value));
-    },
+    label: "Registrado em",
+    sortable: true,
+    formatter: dateFormatter,
   },
-  { key: "product.name", label: "Produto" },
-  { key: "quantity", label: "Quantidade" },
-  { key: "observation", label: "Observação" },
+  { key: "product.name", label: "Produto", sortable: true },
+  { key: "quantity", label: "Quantidade", sortable: true },
+  { key: "observation", label: "Observação", sortable: false },
+  {
+    key: "date_movement",
+    label: "Data da movimentação",
+    sortable: true,
+    formatter: dateFormatter,
+  },
 ];
 
 // Estado da paginação
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+const sortBy = ref("createdAt");
+const sortOrder = ref<"asc" | "desc">("desc");
 
 const modalValue = ref(false);
 const selectedMovement = ref<InventoryMovement | undefined>(undefined);
 
 const movements = computed(() => data.value || []);
 const modalTitle = computed(() => {
-  return "AJUSTAR ESTOQUE";
+  return selectedMovement.value ? "MOVIMENTAÇÃO" : "AJUSTAR ESTOQUE";
 });
+const query = computed(() => ({
+  page: currentPage.value,
+  limit: itemsPerPage.value,
+  sort: {
+    by: sortBy.value,
+    order: sortOrder.value,
+  },
+}));
 
 const { data, pending, refresh, error, feedback, total } = await useAPI<
   InventoryMovement[]
->("/inventory-movements", { //IMPLEMENTAR ORDENAÇÃO PELA API
-  query: {
-    page: currentPage,
-    limit: itemsPerPage,
-  },
-  watch: [currentPage, itemsPerPage],
+>("/inventory-movements", {
+  query,
+  watch: [query],
 });
 
 // Handlers de paginação
@@ -110,6 +137,7 @@ function handleLimitChange(limit: number) {
 
 // Funções de CRUD
 async function createMovement(movementData: InventoryMovementForm) {
+  feedback.clear();
   const { error } = await useAPI<InventoryMovement>("/inventory-movements", {
     method: "POST",
     body: movementData,
@@ -126,7 +154,7 @@ async function createMovement(movementData: InventoryMovementForm) {
       feedback.show("Erro: dados inválidos!", "error");
     }
   } else {
-    feedback.show(`Movimentação registrada com sucesso!`, "success");
+    feedback.show(`Ajuste registrado com sucesso!`, "success");
     await refresh();
     closeModal();
   }
@@ -135,6 +163,10 @@ async function createMovement(movementData: InventoryMovementForm) {
 // Funções do Modal
 function openModalCreate() {
   selectedMovement.value = undefined;
+  modalValue.value = true;
+}
+function openModalRead(movement: InventoryMovement) {
+  selectedMovement.value = { ...movement };
   modalValue.value = true;
 }
 function closeModal() {

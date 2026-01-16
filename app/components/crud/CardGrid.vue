@@ -237,11 +237,9 @@ function handleLimitChange() {
   emit("update:limit", localLimit.value);
   emit("update:page", 1);
 }
-
 function handleSortByChange() {
   emit("update:sort", localSortBy.value, localSortOrder.value);
 }
-
 function toggleSortOrder() {
   localSortOrder.value = localSortOrder.value === 'asc' ? 'desc' : 'asc';
   emit("update:sort", localSortBy.value, localSortOrder.value);
@@ -251,11 +249,9 @@ function toggleSortOrder() {
 watch(() => props.limit, (newLimit) => {
   localLimit.value = newLimit;
 });
-
 watch(() => props.sortBy, (newSortBy) => {
   localSortBy.value = newSortBy || 'name';
 });
-
 watch(() => props.sortOrder, (newSortOrder) => {
   localSortOrder.value = newSortOrder || 'asc';
 });
