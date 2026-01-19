@@ -45,11 +45,11 @@
             class="select select-sm select-bordered"
             @change="handleLimitChange"
           >
-            <option :value="8">8</option>
+            <option :value="6">6</option>
+            <option :value="9">9</option>
             <option :value="12">12</option>
-            <option :value="16">16</option>
-            <option :value="20">20</option>
-            <option :value="40">40</option>
+            <option :value="15">15</option>
+            <option :value="18">18</option>
           </select>
         </div>
       </div>

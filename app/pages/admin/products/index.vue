@@ -91,7 +91,7 @@ definePageMeta({
 
 // Estado da paginação
 const currentPage = ref(1);
-const itemsPerPage = ref(8);
+const itemsPerPage = ref(6);
 
 // Estado da ordenação
 const sortBy = ref("createdAt");
