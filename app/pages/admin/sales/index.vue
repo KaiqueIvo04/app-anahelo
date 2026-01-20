@@ -10,7 +10,7 @@
     :type="feedback.type.value"
   />
 
-  <div class="w-full mt-6 overscroll-x-auto border border-base-300 bg-base-100">
+  <div class="w-full mt-6 overflow-x-auto border border-base-300 bg-base-100">
     <CrudTable
       create-label="REGISTRAR VENDA"
       :rows="sales"

@@ -106,7 +106,7 @@
 
     <div class="form-control">
       <span class="label-text">Preço de custo{{ product ? "" : "*" }}:</span>
-      <label class="input input-bordered validator label mx-2">
+      <label class="input input-bordered validator label md:mx-2">
         <span class="label-text">R$</span>
         <input
           v-model="form.cost"
@@ -126,7 +126,7 @@
     <div class="form-control">
       <span class="label-text">Preço de venda{{ product ? "" : "*" }}:</span>
 
-      <label class="input input-bordered validator label mx-2">
+      <label class="input input-bordered validator label md:mx-2">
         <span class="label-text">R$</span>
         <input
           v-model="form.price"
@@ -144,6 +144,14 @@
     </div>
 
     <div class="flex justify-end gap-2">
+      <button
+        v-if="disabled"
+        type="button"
+        @click="() => disabled = false"
+        class="btn btn-accent"
+      >
+        Editar
+      </button>
       <button
         v-if="disabled"
         type="button"

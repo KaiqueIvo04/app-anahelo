@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="p-4 flex justify-between items-center">
+    <div class="p-4 flex gap-2 justify-between items-center">
       <button
         v-if="!hideCreate && canCreate"
         @click="$emit('create')"

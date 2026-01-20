@@ -145,6 +145,7 @@ function handleSortChange(newSortBy: string, newSortOrder: "asc" | "desc") {
 
 // FUNÇÕES DE CRUD
 async function saveProduct(productData: ProductForm) {
+  feedback.clear();
   if (selectedProduct.value) await editProduct(productData);
   else await createProduct(productData);
 }
@@ -183,6 +184,7 @@ async function editProduct(productData: ProductForm) {
   }
 }
 async function deleteProduct(productData: ProductForm) {
+  feedback.clear();
   if (!confirm("Deseja realmente excluir este produto?")) return;
 
   const { error } = await useAPI(`/products/${productData.id}`, {
