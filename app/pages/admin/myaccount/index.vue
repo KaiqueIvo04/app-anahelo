@@ -34,6 +34,7 @@ const user = loggedUserStore.user;
 const feedback = useFeedback();
 
 async function editUser(userData: UserForm) {
+  feedback.clear();
   const { data, error } = await useAPI<User>(`/users/${userData.id}`, {
     method: "PATCH",
     body: userData,

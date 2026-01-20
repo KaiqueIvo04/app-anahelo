@@ -76,7 +76,12 @@
     </div>
 
     <div class="flex justify-end">
-      <button v-if="disabled" type="button" @click="() => {disabled = false}" class="btn btn-primary">
+      <button
+        v-if="disabled"
+        type="button"
+        @click="() => disabled = false"
+        class="btn btn-primary"
+      >
         Editar
       </button>
       <div v-else class="flex gap-2 justify-end">
@@ -102,7 +107,7 @@ const props = defineProps<{
 
 const disabled = ref(false);
 // Se for edição fica desativado até clicar em "Editar"
-if (props.user) disabled.value = true
+if (props.user) disabled.value = true;
 
 const emit = defineEmits<{
   save: [data: UserForm];
@@ -144,6 +149,7 @@ function saveUser() {
   emit("save", dados);
 
   saving.value = false;
+  disabled.value = true;
 }
 
 function cancel() {
